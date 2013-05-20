@@ -1,17 +1,5 @@
-# Object files
-*.o
+# Compiled files
+*.clufasl
 
-# Libraries
-*.lib
-*.a
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
+# System files
+.DS_Store
