@@ -1,0 +1,60 @@
+
+
+* Incorporate Orjan's test-seq-follows-markov-chain? as rule
+
+  Code already in clusterengine
+
+
+* All rules already in my patches 
+
+  - e.g., tintinnabuli rules
+
+** Collect all rules listed there here centrally
+
+** Collect rules mentioned in TODO lists there here
+
+
+* ! Define rule(s) for following list of values
+
+** Either pitches, rhythm or both follow a given list of pitches/rhythms 
+
+   - Heuristic rule: the closer the pitch/rhythmic value in solution voice is to given voice the better 
+
+   - More abstract variants: heuristic rules where
+     - pitch / rhythmic value intervals follow intervals of given list
+     - directions (contour) follow directions 
+
+** Voice of a given score extracted and transformed into list as above   
+
+** Allow rhythms/pitches from given score to be transformed in various ways
+
+   Ways to compress music by reducing number of notes, e.g., removing 
+   - shorter notes
+   - lower notes
+   - ? last note of voice or each bar 
+   - ... (condition defined by function)
+
+   ? Ways to expand music -- opposite of above    
+   
+   Slight randomisation
+
+   Bending (e.g., adding/multiplying some BPF value to either rhythmic values or pitches)
+
+
+* Define rule to follow underlying irregular metric grid
+
+  First check out Orjan's already existing ways to tweak the accent structure of certain time signatures. However, likely this is not flexible enough (e.g., for different claves different accent structures of the same time signature are needed).
+
+  Metric grid defined by extra voice in resulting score: each note represents a strong beat (even different strength of beat could be represented with different pitches)
+
+  Rule implements (simplified form) of accent model where accents fall on strong beats are represented by that extra voice
+
+
+* Update terminology: rules..
+
+  rules, rule applicators and applied rules
+
+  - Explain terminology in doc
+  - Document each def what it is..
+
+
