@@ -11,7 +11,155 @@
 
 ** Collect all rules listed there here centrally
 
-** Collect rules mentioned in TODO lists there here
+   in [[file:///Users/torsten/Compositions/0-PieceForStringOrchestra/PWGL/Sketches/Tintinnabuli.pwgl][Tintinnabuli.pwgl]]
+   - rhythmic-profile-poly (so far I only included the monophonic version)
+   - tintinnabuli-rules-T-poly
+   - tintinnabuli-rules-M-poly
+
+   - no-empty-sim-consonances-2parts
+   - restrict intervals
+
+   - start-with-rest
+
+   - no-repetition 
+
+
+** Collect rule etc ideas mentioned in TODO lists there here
+
+   Rhythmic constraints
+   - Restrict rests, e.g.,
+     - Accent before rest
+     - Longer rests only at the very beginning
+
+
+*** Todo -- Rhythmic constraints
+
+- ! Less rigid underlying pulse. E.g., try different meter, or define underlying pulse by extra silent voice implementing some accellerating pulse. All notes of the solution must then fall onto start of a note within that extra voice.
+
+- Generalise accent constraint implementation
+- Revise/test/fix only-simple-tuplet-offs
+
+- ! Renaissance-inspired texture: 
+  - Add rest at beginning of one voice with index rule.
+  - Multiple parts controlled with similar rhythm-profile-hr
+
+*** Todo -- Polyphonic template
+
+- Shape melodic shapes 
+  - ? Some of Jacopo's mophology constraints? 
+    - Avoid pitch repetition, ...
+  - Prefer steps
+  - Follow BPF
+
+- Add rhythmic constraints
+
+- ? Counterpoint constraints like avoid parallel 5th
+
+- ? Restructure constraints -- somehow avoid copying PWGL boxes...
+  OK?
+
+*** Todo -- Renaissance-inspired texture
+
+- Layers with rhythmic offset (some voices starting with rests 
+  with index rule), 
+  but similar rhythmic profile (BPF)
+
+- Rhythm:
+  - accent before rest
+  - !? long rests only at beginning
+
+- ?? Harmonic rhythm roughly follows rhythmic profile, but much more slowly
+  Problem: how to keep chords and scales aligned? 
+  ... no problem if there is only a single scale -- use that instead for
+  restricting pitch domain
+
+- Melodic constraints
+  - ? Heuristic: prefer smaller steps (but randomise that)
+  - ? The shorter the note values the smaller the max interval
+  - ? Ballistic curve
+  - !? Control interval between local max? In particular high local max...
+
+- Shape melodic shapes 
+  - ? Some of Jacopo's mophology constraints? 
+    - Avoid pitch repetition, ...
+  - Prefer steps
+  - Follow BPF
+
+- ? Counterpoint constraints like avoid parallel 5th
+
+
+*** Todo -- Tintinnabuli (implemented for any harmony)
+    
+    From [[file:///Users/torsten/Compositions/0-PieceForStringOrchestra/PWGL/Sketches/Tintinnabuli.pwgl][Tintinnabuli.pwgl]] 
+
+**** Generalise tintinnabuli voice constraints
+     Doing the below in terms of software developmemt is easy -- think how to musically use this!
+    - M voice: allow for slightly larger skips (e.g., up to maj 3d?) -- concider this variable..
+    - T voice: control pitch with BPF?
+    - ! Allow T voice and M voice to be pretty independent rhythmically, e.g.,
+      - M-voice (very) slow like a cantus (i.e. stands out) -- by allowing for non-harmonic tones can form a  rich melody in terms of its [Tonvorrat]
+      - T-voice much faster, like a figuration -- accompaniment (not Paert's ideal anymore, I guess, but in my own mind allow for that) 
+      - There can be multiple somehow dependent or independent T-voices
+      - M-voice and T-voice in different beat subdivisions or otherwise clearly separate
+
+
+**** Form
+    - ! Somehow get an overall development of form (e.g., pitches for an arch)
+
+**** Rhythm
+    - Rather simple rhythm, quasi homophonic -- rhythmic hierarchy
+    - Rhythmic motifs
+    - Somehow break down into phrases 
+      (use this patch to generate single phrase?)
+
+**** Accent constraints
+    - Have dissonances on 1st beats of bars
+    - ? Allow/force irregular meter changes
+
+**** Melodic constraints
+    - ? pitch profile?
+    - OK No repetition of pitches within three successive mel notes
+    - OK Limit max step size for T voices
+    - Limit max (min?) pitch (which voices??), and require that this pitch is included towards the end 
+
+**** Constraint between parts
+    - ? Closely restrict range of intervals allowed between parts (9th-10th in case of Pärt)
+    - ?? Counterpoint rules like no parallel 5th?
+
+
+**** Texture 
+    - when going beyond 2 voices -- consider some texture dependencies (imitations), e.g., defined with heuristic profiles
+
+
+**** OLD
+
+- Rhythm:
+  - accent before rest
+  - !? long rests only at beginning
+
+- ?? Harmonic rhythm roughly follows rhythmic profile, but much more slowly
+  Problem: how to keep chords and scales aligned? 
+  ... no problem if there is only a single scale -- use that instead for
+  restricting pitch domain
+
+- Melodic constraints
+  - ? Heuristic: prefer smaller steps (but randomise that)
+  - ? The shorter the note values the smaller the max interval
+  - ? Ballistic curve
+  - !? Control interval between local max? In particular high local max...
+
+- ? Shape melody 
+  - ? Some of Jacopo's mophology constraints? 
+    - Avoid pitch repetition, ...
+  - Prefer steps
+  - Follow BPF
+
+- ? Counterpoint constraints like avoid parallel 5th
+
+
+***** Harmony
+     - OK Avoid empty 5th and 4th in two-voice counterpoint
+
 
 
 * ! Define rule(s) for following list of values
