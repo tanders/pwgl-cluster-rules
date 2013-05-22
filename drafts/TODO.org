@@ -5,6 +5,12 @@
   Code already in clusterengine
 
 
+* Other rhythm ideas
+
+** Longish note before rest
+
+   or accent before rest..
+
 * All rules already in my patches 
 
   - e.g., tintinnabuli rules
@@ -12,19 +18,20 @@
 ** Collect all rules listed there here centrally
 
    in [[file:///Users/torsten/Compositions/0-PieceForStringOrchestra/PWGL/Sketches/Tintinnabuli.pwgl][Tintinnabuli.pwgl]]
-   - rhythmic-profile-poly (so far I only included the monophonic version)
-   - tintinnabuli-rules-T-poly
-   - tintinnabuli-rules-M-poly
+   - durations-control-intervals: [[file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef%20durations-control-intervals%20((voices%200)][file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef durations-control-intervals ((voices 0)]]
 
-   - no-empty-sim-consonances-2parts
-   - restrict intervals
+   - no-empty-sim-consonances-2parts: [[file:~/PWGL-User/User-library/cluster-rules/sources/harmony-rules.lisp::#|%20%3B%3B%20unfinished][file:~/PWGL-User/User-library/cluster-rules/sources/harmony-rules.lisp::#| ;; unfinished]]
 
    - start-with-rest
 
-   - no-repetition 
+   - rhythmic-profile-poly (so far I only included the monophonic version)
+
+   - OK tintinnabuli-rules-T-poly
+   - OK tintinnabuli-rules-M-poly
+   - OK no-repetition
 
 
-** Collect rule etc ideas mentioned in TODO lists there here
+** Collect rule ideas mentioned in TODO lists there here
 
    Rhythmic constraints
    - Restrict rests, e.g.,

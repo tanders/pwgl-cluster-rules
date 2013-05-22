@@ -7,9 +7,11 @@
   :serial t ;; the dependencies are linear.
   :components ((:file "sources/package")
 	       (:file "sources/utils")
-	       (:file "sources/rhythmic-rules")
-	       (:file "sources/harmonic-rules")
 	       (:file "sources/score")
+	       (:file "sources/rhythm-rules")
+	       (:file "sources/melody-rules")
+	       (:file "sources/harmony-rules")
+	       (:file "sources/counterpoint-rules")
 	       ; (:file "sources/export")
 	       (:file "sources/menus"))
   :depends-on ("cluster-engine"))
