@@ -3,6 +3,8 @@
 
 
 ;; This is the starting point for defining heuristic rules that vary somehow an existing score
+;;
+;; NOTE: results also depend on tempo!
 (PWGLDef score-voice2durs ((score nil) (voice-no 0))
 	 "Returns the list of note durations from the voice with the given voice-no.
 
@@ -20,4 +22,3 @@ Current limitations:
 		  (ccl::collect-enp-objects
 		   (nth voice-no (ccl::collect-enp-objects score :voice))
 		   :chord))))
-
