@@ -8,11 +8,13 @@
   :components ((:file "sources/package")
 	       (:file "sources/utils")
 	       (:file "sources/score")
+	       ;; (:file "sources/generic-rules")
 	       (:file "sources/rhythm-rules")
 	       (:file "sources/melody-rules")
 	       (:file "sources/harmony-rules")
 	       (:file "sources/counterpoint-rules")
 	       ; (:file "sources/export")
 	       (:file "sources/menus"))
-  :depends-on ("cluster-engine"))
+  :depends-on ("cluster-engine" ; "ta-utilities"
+	       ))
 
