@@ -23,9 +23,9 @@
 ;;; Rhythmic rules/constraints
 ;;;
 
-;; rhythm-profile-hr
+;; rhythm-profile-BPF-hr
 
-(PWGLDef rhythm-profile-hr 
+(PWGLDef rhythm-profile-BPF-hr 
 	 ((voices 0)
 	  (BPF NIL)
 	  (n 0)
