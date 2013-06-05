@@ -7,6 +7,6 @@
 :bodytext
 "Cluster Engine uses the term rules for several slightly different definitions. Rules are (i) definitions given to boxes like r-pitches-one-voice, r-pitch-pitch etc., (ii) the boxes r-pitches-one-voice, r-pitch-pitch etc. themselves, and (iii) the value returned by these boxes.
 
-This library uses the term rule only for the cases (i). For clarity we refer to Cluster Engine boxes like r-pitches-one-voice and r-pitch-pitch as rule applicators. We call values returned by such Cluster Engine boxes applied rules.
+This library uses the term rule only for the cases (i) and (iii). For clarity we refer to Cluster Engine boxes like r-pitches-one-voice and r-pitch-pitch as rule applicators. If we want to be specific, we call values returned by such Cluster Engine boxes applied rules.
 
-This library defines primarily applied rules. Such rules you can directly connect to the box rules->cluster."
+This library defines primarily applied rules (as a rule of thumb, if we are saying "rule" in the documentation we usually mean applied rules). Such rules you can directly connect to the box rules->cluster."
