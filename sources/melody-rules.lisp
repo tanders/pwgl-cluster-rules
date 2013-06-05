@@ -4,22 +4,29 @@
 ;; pitch-profile-hr
 
 ;; TODO:
-;; - support also BPFs
+;; - generalise this def for rhythms -- work in progress.
+;; - ? Add support for "simple score format" by Kilian -- I can more easily transform such scores before handing them over 
+;;   -> postpone until I actually need it
 ;; - turn into polyphonic version, with different pitches per voice
-;; - copy this def for rhythms... -- turn lambda function into name function, and then reuse that?
+;;   -> postpone until I actually need it
+;; - ? Some case of arg constrain that is more flexible than :intervals but less than :directions -- allow for +/- one semitone (is this really worth it -- after all, these are just heuristics? It could be if it is combined with other heuristic constraints)
 ;;
-(PWGLDef pitch-profile-hr  
+;; - OK change name to follow-profile-hr, and make sure you change all example patches. Store elsewhere in menu and file?
+;; - OK support also BPFs
+;; - OK Predefine some functions for transform and map
+;; - OK How to handle rests in a given score? The current code simply ignores them, only returns notes of pitches. However, if rest are included then the pitch profile is still folled by the notes, so it appears I only need to deal with rests in the rhythmic variant of this definition.
+(PWGLDef follow-profile-hr  
 	 ((voices 0)
 	  (n 0)
-	  (profile NIL) ; for now list of ints
-	  (weight-offset 0)
-	  &key
-	  (transform NIL)
-	  (map NIL)
-	  ;; TODO: implement support for this arg 
+	  (profile NIL) 
+	  (mode () (ccl::mk-menu-subview :menu-list '(":pitch" ":rhythm")))
 	  ;; TODO: test whether I can have a menu as input (for predefined transformations) but nevertheless also give it a function as arg 
-	  (constrain () (ccl::mk-menu-subview :menu-list '(":profile" ":intervals" ":directions"))))
-	 "Heuristic rule. The resulting pitches follow input profile (numbers, a voice, or BPFs).
+	  (constrain () (ccl::mk-menu-subview :menu-list '(":profile" ":intervals" ":directions")))
+	  &key
+	  (weight-offset 0)
+	  (transform NIL)
+	  (map NIL))
+	 "Heuristic rule. The pitches or rhythmic values of the resulting music follow the given profile (numbers, a voice, or BPFs).
 
 Args:
 
@@ -27,59 +34,127 @@ voices (int or list of ints): The voice(s) to which the constraint is applied.
 
 n (int): The first n notes are affected (if n is greater than the length of profile, then that length is taken). If 0, then n is disregarded.
 
-profile: Specifies the profile, which should be followed. This can be either a list of numbers (ints, floats or ratios), a voice object, a [BPF], or a list of any of these (if multiple voices should be constrained). In case a full score object is given, the first voice is extracted. If the voice object contains chords, then only the first chord note is extracted.
+profile: Specifies the profile, which should be followed. This can be either a list of numbers (ints, floats or ratios), a voice object (or a score/part), a BPF object, or a list of any of these (if multiple voices should be constrained). In case a score or part object is given, then only the first voice is extracted and used. If voice objects contains chords, then only the first chord note is extracted. In case a BPF is given, then that BPF is sampled (n samples) and the y values are used.
+
+mode: Select whether to constrain either the rhythmic values (rhythm) or the pitches (pitch). If you want to constrain both, then simply use two instances of this rule with different mode settings.
+
+constrain: Select whether pitch/rhythm should follow the profile directly, or whether pitch/rhythm intervals should follow the intervals between profile, or pitch/rhythm directions should follow the directions of profile intervals.
+
+Key args:
 
 weight-offset (int): offset to the heuristic weight of this rule (the higher the offset, the more important this rule becomes compared with other heuristic rules).
 
-Key args:
-map: Change every individual input value with some definition (e.g., add some random offset). Expects a function or abstraction expecting a number and returning a number. 
-transform: Change the whole sequence of input profile with some definition (e.g., reverse or rotate the sequence, or remove some elements). Expects a function or abstraction expecting a list and returning a list.
-constrain: Select whether pitches should follow the profile directly, or whether pitch intervals should follow the intervals between profile, or pitch directions should follow pitch directions."
-	 ()
+transform: Change the whole sequence of input profile with some definition (e.g., reverse or rotate the sequence, or remove some elements). Expects a function or abstraction expecting a list and returning a list. Some functions are already predefined for convenience (menu Cluster Rules - profile - transformations).
+
+map: Change every individual input value with some definition (e.g., add some random offset). Expects a function or abstraction expecting a number and returning a number. Some functions are already predefined for convenience (menu Cluster Rules - profile - mappings).
+"
+	 (:groupings '(3 2))
 	 (flet ((direction-int (x1 x2)
 		 "Encodes the direction of the interval between x1 and x2 as integer. An interval 'upwards' (the predecessor is smaller than the successor) is represented by 2, an 'horizontal' interval (the predecessor and the successor are equal) is represented by 1, and an interval 'downwards' by 0."
 	     (cond ((< x1 x2) 2)
 		   ((= x1 x2) 1)
 		   ((> x1 x2) 0))))
-	   (let* ((plain-profile (cond ((listp profile) profile) ;; TODO: revise for polyphonic case
-				       ((or (ccl::voice-p profile) (ccl::score-p profile) (ccl::part-p profile)) 
-					(mapcar #'(lambda (chord) 
-						    (ccl::midi (first (ccl::collect-enp-objects chord :note))))
-						(ccl::collect-enp-objects (first (ccl::collect-enp-objects profile :voice)) 
-									  :chord)))
-				       (T (error "Neither list nor score nor BPF: ~A" profile))))
+	   (let* ((plain-profile 
+		   ;; process different inputs: list of int, BPF, score... 
+		   (cond ((listp profile) profile) ;; TODO: revise for polyphonic case (test for list of numbers)
+			 ((ccl::break-point-function-p profile)
+			  (if (> n 0)  
+			      (ccl::pwgl-sample profile n)
+			    (progn (warn "Cannot sample BPF with n set to 0") NIL)))
+			 ((or (ccl::voice-p profile) (ccl::score-p profile) (ccl::part-p profile)) 
+			  (case mode
+			    (:pitch (voice->pitches profile))
+			    (:rhythm (voice->durations profile))))
+			 (T (error "Neither list nor score nor BPF: ~A" profile))))
 		  (transformed-profile (if transform 
 					   (funcall transform plain-profile)
 					 plain-profile))
 		  (mapped-profile (if map 
 				      (mapcar map transformed-profile)
 				    transformed-profile)))
-	     (hr-pitches-one-voice #'(lambda (xs) 
-				       "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
-				       (let ((l (length xs)))
-					 (if (and (or (= n 0) (<= l n))
-						  (<= l (length mapped-profile)))
-					     (+ (- (abs
-						    (case constrain
-						      (:profile  (- (first (last xs)) (nth (1- l) mapped-profile)))
-						      ;; distance between distances of last two vals
-						      (:intervals (if (>= l 2)
-						    		      (- (apply #'- (last xs 2))
-						    			 (- (nth (- l 2) mapped-profile)
-						    			    (nth (- l 1) mapped-profile)))
-						    		    0))
-						      ;; distance between directions of last two vals
-						      (:directions (if (>= l 2)
-						    		       (- (apply #'direction-int (last xs 2))
-						    			  (direction-int
-						    			   (nth (- l 2) mapped-profile)
-						    			   (nth (- l 1) mapped-profile)))
-						    		     0)))))
-						    weight-offset)
-					   ;; otherwise no preference
-					   0)))
-				   voices
-				   :all-pitches))))
+	     (funcall (case mode
+			(:pitch #'hr-pitches-one-voice)
+			(:rhythm #'hr-rhythms-one-voice))
+		      #'(lambda (xs) 
+			  "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
+			  (let ((l (length xs)))
+			    (if (and (or (= n 0) (<= l n))
+				     (<= l (length mapped-profile)))
+				(+ (- (abs
+				       ;; process different settings for constrain
+				       (case constrain
+					 (:profile  (- (first (last xs)) (nth (1- l) mapped-profile)))
+					 ;; distance between distances of last two vals
+					 ;; TODO: unfinished for rhythm -- how to compute distance of distances?
+					 (:intervals (if (>= l 2)
+							 (case mode
+							   (:pitch (- (apply #'- (last xs 2))
+								      (- (nth (- l 2) mapped-profile)
+									 (nth (- l 1) mapped-profile))))
+							   ;; for rhythm distance is quotient not difference
+							   (:rhythm (- (apply #'/ (last xs 2))
+								       (/ (nth (- l 2) mapped-profile)
+									  (nth (- l 1) mapped-profile)))))
+						       0))
+					 ;; distance between directions of last two vals
+					 ;; TODO: for rhythm def direction as whether distances are smaller or larger than 1 not 0
+					 (:directions (if (>= l 2)
+							  (- (apply #'direction-int (last xs 2))
+							     (direction-int
+							      (nth (- l 2) mapped-profile)
+							      (nth (- l 1) mapped-profile)))
+							0)))))
+				   weight-offset)
+			      ;; otherwise no preference
+			      0)))
+		      voices
+		      (case mode
+			(:pitch :all-pitches)
+			(:rhythm :list-with-all-durations))))))
+
+
+;; Some mapping functions for pitch-profile-hr or rhythm-profile-hr
+
+(defun compose-functions (&rest funs)
+  "Expects any number of mapping or transformation functions and composes these into a single function that can be given to pitch-profile-hr or rhythm-profile-hr. The functions will be called in their given order."
+  #'(lambda (x) 
+      (reduce #'(lambda (y f) (funcall f y)) funs :initial-value x)))
+
+(defun mp-add-offset (offset)
+  "Returns a mapping function for pitch-profile-hr or rhythm-profile-hr. offset is added to the original value."
+  #'(lambda (x) (+ x offset)))
+
+(defun mp-multiply (factor)
+  "Returns a mapping function for pitch-profile-hr or rhythm-profile-hr. factor is multiplied to the original value."
+  #'(lambda (x) (* x factor)))
+
+(defun mp-add-random-offset (max-random-offset)
+  "Returns a mapping function for pitch-profile-hr or rhythm-profile-hr. max-random-offset is the maximun random deviation, above or below the original value."
+  #'(lambda (x) 
+      (let ((abs-rnd-offset (abs max-random-offset)))
+	(+ x (pw::g-random (* abs-rnd-offset -1) abs-rnd-offset)))))
+
+
+;; Some transformation functions for pitch-profile-hr or rhythm-profile-hr
+
+(defun trfm-scale (min max)
+  "Returns a transformation function for pitch-profile-hr or rhythm-profile-hr. The original values are scaled between min and max."
+  #'(lambda (xs) (pw::g-scaling xs min max)))
+
+(defun trfm-add-BPF (BPF)
+  "Returns a transformation function for pitch-profile-hr or rhythm-profile-hr. To each original value the corresponding BPF vcalue is added."
+  #'(lambda (xs) 
+      (mapcar #'+ xs (ccl::pwgl-sample BPF (length xs)))))
+
+(defun trfm-multiply-BPF (BPF)
+  "Returns a transformation function for pitch-profile-hr or rhythm-profile-hr. To each original value the corresponding BPF vcalue is multiplied."
+  #'(lambda (xs) 
+      (mapcar #'* xs (ccl::pwgl-sample BPF (length xs)))))
+
+(defun trfm-reverse (min max)
+  "Returns a transformation function for pitch-profile-hr or rhythm-profile-hr. The original value sequence is reversed."
+  #'(lambda (xs) (reverse xs)))
+
 
 
 ;; no-repetition
