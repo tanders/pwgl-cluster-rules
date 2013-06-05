@@ -11,6 +11,10 @@
 
    or accent before rest..
 
+** Heuristic rule -- prefer scale (or chord) roots
+   
+   Slight preference for the scale (chord?) PC -- amount of preference controllable with an argument
+
 
 * All rules already in my patches 
 
