@@ -5,8 +5,8 @@
 ;; This is the starting point for defining heuristic rules that vary somehow an existing score
 ;;
 ;; NOTE: results also depend on tempo!
-(PWGLDef score-voice2durs ((score nil) (voice-no 0))
-	 "Returns the list of note durations from the voice with the given voice-no.
+(PWGLDef voice->durations ((score nil))
+	 "Expects a voice and returns a list of its note durations. If a score or part is given instead, then the first voice is selected.
 
 TODO:
 - integrate (ccl::tied-p chord)
@@ -19,6 +19,14 @@ Current limitations:
 	  (mapcar #'(lambda (chord) 
 		      (* (ccl::start-time chord)
 			 (if (ccl::rest-p chord) -1 1)))
-		  (ccl::collect-enp-objects
-		   (nth voice-no (ccl::collect-enp-objects score :voice))
-		   :chord))))
+		  (ccl::collect-enp-objects (first (ccl::collect-enp-objects score :voice)) 
+					    :chord))))
+
+
+(PWGLDef voice->pitches ((score nil))
+	 "Expects a voice and returns a list of its note pitches. If a score or part is given instead, then the first voice is selected."
+	 ()
+	 (mapcar #'(lambda (chord) 
+		     (ccl::midi (first (ccl::collect-enp-objects chord :note))))
+		 (ccl::collect-enp-objects (first (ccl::collect-enp-objects score :voice)) 
+					   :chord)))
