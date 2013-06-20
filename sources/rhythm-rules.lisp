@@ -252,7 +252,9 @@ If note is accented then start on a beat OR if not starts on a beat then it most
 |#
 
 ;; !! TODO: later allow for actual accent constraints to be given as args with fun expecting funs and returning a fun
-;; TODO: how can I take rests into account?
+;; TODO: 
+;; - how can I take rests into account?
+;; - rule only applied when there are actually three notes in succession, i.e., not on 1st two notes?
 ;;
 ;; NOTE: constraint applied to d_offs2, but only checked after d_offs3 is bound
 (defun accent-is-longer-than-predecessor-rule  (d_offs1 d_offs2 d_offs3)
@@ -273,7 +275,10 @@ If note is accented then start on a beat OR if not starts on a beat then it most
 	  &optional
 	  (rule-type  () :rule-type-mbox)
 	  (weight 1))
-	 "Strait-forward but unflexible accent model implementation. Notes on the selected metric position (metric-structure, either :beats or :1st-beat) are rhythmically accented: such note is longer than the preceeding note and not shorter than the succeeding note.
+	 "Strait-forward but unflexible accent model implementation.
+If an accent occurs, then it is on the position defined. However, random accents can happen on the 1st or last two notes.
+
+ Notes on the selected metric position (metric-structure, either :beats or :1st-beat) are rhythmically accented: such note is longer than the preceeding note and not shorter than the succeeding note.
 
 All arguments are inherited from r-note-meter." 
 	 ()
