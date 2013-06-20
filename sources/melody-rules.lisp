@@ -28,6 +28,8 @@
 	  (map NIL))
 	 "Heuristic rule. The pitches or rhythmic values of the resulting music follow the given profile (numbers, a voice, or BPFs).
 
+Note: If this rule is used with pitch/rhythm motifs, then only the selection of the 1st motif note is controlled by the rule (in future it would be nice to control the average pitch/rhythm of motifs, but that would require different rule applicators).
+
 Args:
 
 voices (int or list of ints): The voice(s) to which the constraint is applied. 
@@ -157,31 +159,72 @@ map: Change every individual input value with some definition (e.g., add some ra
 
 
 
-;; no-repetition
+;; no-direct-repetition
 
-(PWGLDef no-repetition ((voice 0))
+(PWGLDef no-direct-repetition ((voices 0)			
+			       &optional
+			       (rule-type  () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+			       (weight 1))
 	 "Disallows any direct pitch repetition. 
 
 Args: 
-voice: the number of the voice to constrain."
+voices: the number of the voice(s) to constrain.
+
+Optional arguments are inherited from r-pitches-one-voice."
 	 () 
 	 (r-pitches-one-voice #'(lambda (p1 p2) 
 				  (if (and p1 p2) ; no rests
 				      (/= p1 p2)
 				    T))
-			      voice
-			      :pitches))
+			      voices
+			      :pitches
+			      rule-type weight))
+
+
+;; no-repetition
+
+(PWGLDef no-repetition ((voices 0)
+			(window 2)
+			(mode () (ccl::mk-menu-subview :menu-list '(":pitches" ":pcs")))			
+			&optional
+			(rule-type  () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+			(weight 1))
+	 "Disallows pitch repetitions within a window of a give number of notes.
+
+Args: 
+voices: the number of the voice(s) to constrain.
+window: the number of notes among which no repetition should happen (if this is larger than the currently available number, then simply the available notes are taken).
+mode: whether to disallow repeated pitches (:pitches) or pitch classes (:pcs).
+
+Optional arguments are inherited from r-pitches-one-voice."
+	 () 
+	 (r-pitches-one-voice #'(lambda (pitches) 
+				  (let* ((ps (mapcar #'(lambda (p)
+							 (case mode 
+							   (:pitches p)
+							   (:pcs (mod p 12))))
+						     (last pitches window)))
+					 (p1 (first (last ps))))
+				    (if p1 ; no rest
+					(progn (format t "no-repetition -- p: ~A, ps: ~A, result: ~A ~%"
+						       p1 (butlast ps) (not (member p1 (butlast ps))))
+					       (not (member p1 (butlast ps))))
+				      T)))
+			      voices
+			      :all-pitches
+			      rule-type weight))
+
 
 ;; min/max-melodic-interval
-
-(PWGLDef min/max-interval ((voice 0)
+;; TODO: min-interval and max-interval can be BPFs
+(PWGLDef min/max-interval ((voices 0)
 			   &key
 			   (min-interval NIL)
 			   (max-interval NIL))
-	 "Limit the minimum/maximum melodic interval between voices at the given max-interval.
+	 "Limit the minimum/maximum melodic interval for the given voice.
 
 Args: 
-voice: the number of the voice to constrain.
+voices: the number of the voice(s) to constrain.
 min-interval (key arg): minimum interval in semitones. Ignored if NIL. Implicitly disallows repetition if >= 1.
 max-interval (key arg): maximum interval in semitones. Ignored if NIL."
 	 () 
@@ -195,7 +238,7 @@ max-interval (key arg): maximum interval in semitones. Ignored if NIL."
 						 (<= interval max-interval)
 					       T)))
 				    T))
-			      voice
+			      voices
 			      :pitches))
 
 
