@@ -13,31 +13,13 @@
 
 ** Heuristic rule -- prefer scale (or chord) roots
    
-   Slight preference for the scale (chord?) PC -- amount of preference controllable with an argument
+   Slight preference for the scale (chord?) PC -- amount of preference controllable with an argument]
 
 
 * All rules already in my patches 
 
-  - e.g., tintinnabuli rules
-
-** Collect all rules listed there here centrally
-
-   in [[file:///Users/torsten/Compositions/0-PieceForStringOrchestra/PWGL/Sketches/Tintinnabuli.pwgl][Tintinnabuli.pwgl]]
-   - durations-control-intervals: [[file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef%20durations-control-intervals%20((voices%200)][file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef durations-control-intervals ((voices 0)]]
-
-   - no-empty-sim-consonances-2parts: [[file:~/PWGL-User/User-library/cluster-rules/sources/harmony-rules.lisp::#|%20%3B%3B%20unfinished][file:~/PWGL-User/User-library/cluster-rules/sources/harmony-rules.lisp::#| ;; unfinished]]
-
-   - start-with-rest
-
-   - rhythmic-profile-poly (so far I only included the monophonic version)
-
-   - OK tintinnabuli-rules-T-poly
-   - OK tintinnabuli-rules-M-poly
-   - OK no-repetition
-
-
 ** Collect rule ideas mentioned in TODO lists there here
-
+   
    Rhythmic constraints
    - Restrict rests, e.g.,
      - Accent before rest
@@ -173,10 +155,43 @@
      - OK Avoid empty 5th and 4th in two-voice counterpoint
 
 
+** DONE Collect all rules listed there here centrally
+   CLOSED: [2013-06-20 Thu 16:57]
+
+   in [[file:///Users/torsten/Compositions/0-PieceForStringOrchestra/PWGL/Sketches/Tintinnabuli.pwgl][Tintinnabuli.pwgl]]
+
+   - rhythmic-profile-poly (so far I only included the monophonic version)
+
+   - OK start-with-rest
+
+   - OK durations-control-intervals: [[file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef%20durations-control-intervals%20((voices%200)][file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef durations-control-intervals ((voices 0)]]
+
+   - OK no-empty-sim-consonances-2parts: [[file:~/PWGL-User/User-library/cluster-rules/sources/harmony-rules.lisp::#|%20%3B%3B%20unfinished][file:~/PWGL-User/User-library/cluster-rules/sources/harmony-rules.lisp::#| ;; unfinished]]
+
+   - OK tintinnabuli-rules-T-poly
+   - OK tintinnabuli-rules-M-poly
+   - OK no-repetition
+
+
 
 * ! Define rule(s) for following list of values
 
-** Interface sketch
+** TODO Allow rhythms/pitches from given score to be transformed in various ways
+
+   Ways to compress music by reducing number of notes, e.g., removing 
+   - shorter notes
+   - lower notes
+   - ? last note of voice or each bar 
+   - ... (condition defined by function)
+
+   ? Ways to expand music -- opposite of above    
+   
+   !? Slight randomisation
+
+   Bending (e.g., adding/multiplying some BPF value to either rhythmic values or pitches)
+
+** DONE Interface sketch
+   CLOSED: [2013-06-20 Thu 16:47]
 
    name: follow values
 
@@ -203,7 +218,8 @@
    If both pitch and rhythm should be followed and the args map, transform or constrain should be used, then consider using two instances of this constraint to control pitches and rhythms independently
 
 
-** Either pitches, rhythm or both follow a given list of pitches/rhythms 
+** DONE Either pitches, rhythm or both follow a given list of pitches/rhythms 
+   CLOSED: [2013-06-20 Thu 16:46]
 
    - Heuristic rule: the closer the pitch/rhythmic value in solution voice is to given voice the better 
 
@@ -212,21 +228,8 @@
      - directions (contour) follow directions 
 
 
-** Voice of a given score extracted and transformed into list as above   
-
-** Allow rhythms/pitches from given score to be transformed in various ways
-
-   Ways to compress music by reducing number of notes, e.g., removing 
-   - shorter notes
-   - lower notes
-   - ? last note of voice or each bar 
-   - ... (condition defined by function)
-
-   ? Ways to expand music -- opposite of above    
-   
-   !? Slight randomisation
-
-   Bending (e.g., adding/multiplying some BPF value to either rhythmic values or pitches)
+** DONE Voice of a given score extracted and transformed into list as above   
+   CLOSED: [2013-06-20 Thu 16:46]
 
 
 * Define rule to follow underlying irregular metric grid
