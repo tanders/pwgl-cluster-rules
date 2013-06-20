@@ -4,6 +4,7 @@
 ;; pitch-profile-hr
 
 ;; TODO:
+;; - !! Efficiency: change mapped-profile from list into array for faster access during search -- see PWConstraints example.. 
 ;; - generalise this def for rhythms -- work in progress.
 ;; - ? Add support for "simple score format" by Kilian -- I can more easily transform such scores before handing them over 
 ;;   -> postpone until I actually need it
@@ -34,7 +35,7 @@ Args:
 
 voices (int or list of ints): The voice(s) to which the constraint is applied. 
 
-n (int): The first n notes are affected (if n is greater than the length of profile, then that length is taken). If 0, then n is disregarded.
+n (int): The first n notes are affected (if n is greater than the length of profile, then that length is taken). If 0, then n is disregarded. NOTE: if a BPF is used then make sure n is greater than 0.
 
 profile: Specifies the profile, which should be followed. This can be either a list of numbers (ints, floats or ratios), a voice object (or a score/part), a BPF object, or a list of any of these (if multiple voices should be constrained). In case a score or part object is given, then only the first voice is extracted and used. If voice objects contains chords, then only the first chord note is extracted. In case a BPF is given, then that BPF is sampled (n samples) and the y values are used.
 
@@ -206,9 +207,10 @@ Optional arguments are inherited from r-pitches-one-voice."
 						     (last pitches window)))
 					 (p1 (first (last ps))))
 				    (if p1 ; no rest
-					(progn (format t "no-repetition -- p: ~A, ps: ~A, result: ~A ~%"
-						       p1 (butlast ps) (not (member p1 (butlast ps))))
-					       (not (member p1 (butlast ps))))
+					(not (member p1 (butlast ps)))
+					;; (progn (format t "no-repetition -- p: ~A, ps: ~A, result: ~A ~%"
+					;; 	       p1 (butlast ps) (not (member p1 (butlast ps))))
+					;;        (not (member p1 (butlast ps))))
 				      T)))
 			      voices
 			      :all-pitches
@@ -216,30 +218,80 @@ Optional arguments are inherited from r-pitches-one-voice."
 
 
 ;; min/max-melodic-interval
-;; TODO: min-interval and max-interval can be BPFs
+;; TODO: 
+;; - !! Efficiency: use array instead of list 
 (PWGLDef min/max-interval ((voices 0)
 			   &key
 			   (min-interval NIL)
-			   (max-interval NIL))
+			   (max-interval NIL)
+			   (n 0)
+			   (rule-type  () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+			   (weight 1))
 	 "Limit the minimum/maximum melodic interval for the given voice.
 
 Args: 
-voices: the number of the voice(s) to constrain.
-min-interval (key arg): minimum interval in semitones. Ignored if NIL. Implicitly disallows repetition if >= 1.
-max-interval (key arg): maximum interval in semitones. Ignored if NIL."
-	 () 
-	 (r-pitches-one-voice #'(lambda (pitch1 pitch2)
-				  (if (and pitch1 pitch2) ; no rests
-				      (let ((interval (abs (- pitch1 pitch2))))
-					(and (if min-interval 
-						 (<= min-interval interval)
-					       T)
-					     (if max-interval 
-						 (<= interval max-interval)
-					       T)))
-				    T))
-			      voices
-			      :pitches))
+voices (int or list of ints): the number of the voice(s) to constrain.
+
+key-args:
+min-interval (number, BPF or NIL): minimum interval in semitones. Ignored if NIL. Implicitly disallows repetition if >= 1. If a BPF, then the BPF specifies how the min interval changes over n notes (i.e., BPF specifies n-1 intervals).
+max-interval (number, BPF or NIL): maximum interval in semitones. Ignored if NIL. If a BPF, then the BPF specifies how the max interval changes over n notes.
+n (int): The first n notes are affected. If 0, then n is disregarded. NOTE: if any BPF is set then make sure n is greater than 0.
+
+Args rule-type and weight inherited from r-pitches-one-voice."
+	 ()
+	 (if (some #'ccl::break-point-function-p (list min-interval max-interval))	   
+	     ;; one or both intervals are BPF  
+	     (flet ((make-intervals (min/max-interval)
+			"Transforms BPF (or scalar) interval into list/array of interval numbers."	    
+			(cond ((ccl::break-point-function-p min/max-interval)
+			       (if (> n 0)  
+				   (ccl::pwgl-sample min/max-interval (1- n))
+				 (progn (warn "Cannot sample BPF with n set to 0")
+					NIL)))
+			      ((numberp min/max-interval) (make-list n :initial-element min/max-interval))
+			      ((null min/max-interval) min/max-interval))))
+	       (let ((min-intervals (make-intervals min-interval))
+		     (max-intervals (make-intervals max-interval)))
+		 (r-pitches-one-voice #'(lambda (pitches)					  
+					  (let ((l (length pitches)))
+					    (if (and (>= l 2) (<= l n))
+						(let* ((last-pitches (last pitches 2))
+						       (pitch1 (second last-pitches))
+						       (pitch2 (first last-pitches)))
+						  (if (and pitch1 pitch2) ; no rests
+						      (let ((interval (abs (- pitch1 pitch2))))
+							(and (if min-intervals ;; TODO: efficiency: this test only required once
+								 (<= (nth (- l 2) min-intervals) interval)
+							       T)
+							     (if max-intervals ;; TODO: efficiency: this test only required once
+								 (progn 
+								   ;; (format t "min/max-interval -- interval: ~A, max-interval: ~A, result: ~A ~%"
+								   ;; 	   interval 
+								   ;; 	   (nth (- l 2) max-intervals)
+								   ;; 	   (<= interval (nth (- l 2) max-intervals)))
+								   (<= interval (nth (- l 2) max-intervals)))
+							       T)))
+						    T))
+					      T)))
+					    voices
+					    :all-pitches
+					    rule-type
+					    weight)))
+	   ;; both intervals are scalars
+	   (r-pitches-one-voice #'(lambda (pitch1 pitch2)
+				    (if (and pitch1 pitch2) ; no rests
+					(let ((interval (abs (- pitch1 pitch2))))
+					  (and (if min-interval 
+						   (<= min-interval interval)
+						 T)
+					       (if max-interval 
+						   (<= interval max-interval)
+						 T)))
+				      T))
+				voices
+				:pitches
+				rule-type
+				weight)))
 
 
 (PWGLDef durations-control-intervals ((rel-factor 32)
