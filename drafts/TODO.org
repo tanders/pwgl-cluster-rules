@@ -5,15 +5,206 @@
   Code already in clusterengine
 
 
-* Other rhythm ideas
+* Other rule ideas
 
 ** Longish note before rest
 
    or accent before rest..
 
+
 ** Heuristic rule -- prefer scale (or chord) roots
    
    Slight preference for the scale (chord?) PC -- amount of preference controllable with an argument]
+
+
+** Strasheela rules 
+
+*** Harmony
+
+**** ! Express harmony
+
+     Include all notes of the underlying harmony. Different settings for
+     - At the beginning of the harmony
+     - Over the whole duration of the harmony
+     - For each full beat duration
+     - For each full bar duration
+
+
+**** Control inversions
+
+     Control which tone can be / must not be in the bass (chord root is the 1st tone of any underlying harmony)
+
+
+** Rules inspired by JBS
+
+*** Melody
+
+**** No more / at least / exactly N notes of given voice(s) ascending/descending/in same direction
+
+     N can be controlled with BPF
+
+     N = 4
+     (:TRUE/FALSE * ?1 ?2 ?3 ?4 (?IF (NOT (< (M ?1) (M ?2) (M ?3) (M ?4)))))
+
+
+**** Disallow/require certain melodic intervals (intervals given as list)
+
+     special arg sets whether intervals are absolute (up or down) or only for given direction (pos or neg)
+
+
+     (:TRUE/FALSE * ?1 ?2 (?IF (MEMBER (ABS (- (M ?2) (M ?1))) (QUOTE (1 2 3)))))
+
+
+**** The [accumulative] interval between the pitches of N notes is smaller / greater than interval I
+
+     I can be controlled with BPF
+
+     ;; for N = 3 and Interval = 11
+     PWGL-> (:HEURISTIC * ?1 ?2 ?3 (?IF (IF (NOT (> (ABS (- (M ?3) (M ?1))) 11)) 1 0)))
+     PWGL-> (:TRUE/FALSE * ?1 ?2 ?3 (?IF (NOT (> (ABS (- (M ?3) (M ?1))) 11))))
+
+     Note: this implementation only works for interval between notes with distance N, but not anything in between 
+     E.g., in case N is 3, then the interval between direct neighbours can exceed the given interval
+     (this could be avoided by constraining all combinations of consecutive intervals up to N)
+
+
+**** Resolve skips
+
+    If there is a skip >= than set interval SKIP, then the next interval should be <= set interval RESOLUTION (in the opposite direction ?)
+ 
+;; for SKIP=5 and RESOLUTION=2   
+(:TRUE/FALSE * ?1 ?2 ?3
+ (?IF 
+  (LET ((INT1 (- (M ?2) (M ?1))) 
+        (INT2 (- (M ?3) (M ?2))))
+    (IF (< (ABS INT1) 5)
+        T
+      (AND (< (ABS INT2) 2) (NOT (= (SIGNUM INT1) (SIGNUM INT2))))))))
+    
+
+*** Harmony
+
+**** !! Set min (max, equal) number of different PCs 
+
+     Together with constraints requiring to follow harmony this allows to require that the underlying harmony is expressed 
+     
+     ?? Implicit restriction -- max number of PCs should not be larger than number of sim voices?
+
+     When to apply constraint
+     - At any moment in the score (whenever a new note starts)
+     - For each full beat duration
+     - For each full bar duration     
+     - At the beginning of a new harmony
+     - Over the whole duration of a harmony
+
+     ? Have number of PCs controlled with BPF -- that would only work if underlying harmony allows for that, but could be useful 
+
+
+**** Avoid simply swapping PCs between voices in succession
+
+     See s-pmc-forbidden-int-relation-between-2-parts-rule
+
+
+**** ! Control how often a harmonic interval between two voices can be repeated
+     
+     See s-pmc-not-n-consecutive-harm-int-rule
+
+
+**** ! Control how long two parts can move in the same direction
+
+     See s-pmc-not-n-same-directions-rule
+
+
+**** Control harmonic doublings 
+
+     I.e., which PCs is occurring multiple times
+
+     See s-pmc-preferred-duplicate-rule
+     
+
+**** ? Allowed/disallowed intervals between two voices
+
+     ? Cover all cases of the following rules?
+
+     s-pmc-intv-between-2-parts-rule, s-pmc-not-intv-between-2-parts-rule
+     s-pmc-smaller-int-between-2-parts-rule, s-pmc-bigger-int-between-2-parts-rule
+
+     (s-pmc-allowed-int-between-a-part-and-others)
+     
+
+**** ? Allowed harmonies 
+
+     Could be used without predefined underlying harmony -- which PC sets (e.g., using forte notation) to allow for in general (either absolute or including transpositions)
+     
+     See s-pmc-allowed-harm-rule
+
+
+**** ? Which harmony can follow which harmony -- quasi markov chain
+
+     See s-pmc-chords-succession-rule
+
+
+**** ?? Forbidden harmonic successions -- s-pmc-forbidden-succession-rule
+
+     A given harmonic interval I1 must not be followed by another harmonic interval I2
+
+     E.g., a tritone should not be followed by a fifth
+
+
+**** ? Restrict harmonic intervals -- s-pmc-allowed-harm-int-rule /  s-pmc-not-allowed-harm-int-rule
+
+    constraint between every part combination
+
+;; given list of allowed harmonic intervals = (0 2 5 7 12 14)
+(:TRUE/FALSE * ?1 :HARMONY
+ (?IF
+  (LET* ((HARMONY (M ?1 :COMPLETE? T))
+         (INTS (G-ABS (PATCH-WORK:FLAT (JBS-CONSTRAINTS:FIND-ALL-INTERVALS HARMONY)))))
+    (IF INTS (EVERY #'(LAMBDA (X) (MEMBER X '(0 2 5 7 12 14))) INTS) T))))
+
+
+*** Counterpoint 
+
+**** No open parallels -- S-PMC-NO-OPEN-PARALLEL-RULE
+
+;; intervals here (0 7) 
+
+(:TRUE/FALSE * ?1
+ :HARMONY
+ (?IF
+  (LET ((MAT (MATRIX-ACCESS (M ?1 :VL-MATRIX T) :H)))
+    (IF MAT
+        (DESTRUCTURING-BIND (M11 M12) (FIRST MAT)
+          (IF (/= M11 M12)
+              (NOT (FIND-IF #'(LAMBDA (MEL2)
+                                (DESTRUCTURING-BIND (M21 M22) MEL2
+                                  (LET ((HINT1 (MOD12 (ABS (- M11 M21))))
+                                        (HINT2 (MOD12 (ABS (- M12 M22)))))
+                                    (AND (/= M21 M22)
+                                         (MEMBER HINT1 '(0 7))
+                                         (= HINT1 HINT2)))))
+                            (REST MAT)))
+            T))
+      T))))
+
+
+
+**** Hidden parallels -- s-pmc-hidden-parallel-rule
+
+
+*** Utils
+
+**** Meta rule: logic or
+
+     See s-pmc-logic-or-condition
+
+
+*** Follow existing energy profile 
+
+    Implemented simply with "unification" 
+
+
+
 
 
 * All rules already in my patches 
@@ -37,6 +228,7 @@
   - Add rest at beginning of one voice with index rule.
   - Multiple parts controlled with similar rhythm-profile-hr
 
+
 *** Todo -- Polyphonic template
 
 - Shape melodic shapes 
@@ -51,6 +243,7 @@
 
 - ? Restructure constraints -- somehow avoid copying PWGL boxes...
   OK?
+
 
 *** Todo -- Renaissance-inspired texture
 
@@ -68,7 +261,7 @@
   restricting pitch domain
 
 - Melodic constraints
-  - ? Heuristic: prefer smaller steps (but randomise that)
+  - OK (part of min/max-interval) ? Heuristic: prefer smaller steps (but randomise that)
   - ? The shorter the note values the smaller the max interval
   - ? Ballistic curve
   - !? Control interval between local max? In particular high local max...
@@ -77,7 +270,7 @@
   - ? Some of Jacopo's mophology constraints? 
     - Avoid pitch repetition, ...
   - Prefer steps
-  - Follow BPF
+  - OK Follow BPF
 
 - ? Counterpoint constraints like avoid parallel 5th
 
@@ -189,6 +382,7 @@
    !? Slight randomisation
 
    Bending (e.g., adding/multiplying some BPF value to either rhythmic values or pitches)
+
 
 ** DONE Interface sketch
    CLOSED: [2013-06-20 Thu 16:47]
