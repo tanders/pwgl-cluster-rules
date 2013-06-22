@@ -255,7 +255,7 @@ What I could easily do is apply multiple accent rules independently. However, I 
 - Add missing args of the Strasheela def
 - Define set of accent-rules
 - Write documentation
-|#
+
 (PWGLDef accent-if ((accent-rules NIL)
 		    (voices 0)
 		    (metric-position () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
@@ -281,7 +281,7 @@ What I could easily do is apply multiple accent rules independently. However, I 
 		gracenote-mode
 		rule-type weight))
 
-
+|#
 
 
 ;;
