@@ -240,8 +240,53 @@ Further optional arguments are inherited from r-index-rhythms-one-voice"
 
 
 ;;;
-;;; Accent Model (greatly simplified)
+;;; Accent Model 
 ;;;
+
+#|
+;; Musing
+Accent-rules must be applied to different score contexts. So, I would need to combine r-note-meter calls with different args (e.g., different format settings and different number of args per rule). However, it will then be difficult to combine the rating of the applied constraints. I basically need reified constraints of the cluster-engine, and likely an additional variable to store the rating. Hm...
+
+What I could easily do is apply multiple accent rules independently. However, I think a strength of the Strasheela accent model is that it allows to combine multiple accent constraints that depend on each other.  
+
+
+;; TODO:
+- Decide: should different accent rules have access to different information (different format settings: :offs, :d_offs, :d_offs_m, :d_offs_m_n)? For now assume the same setting for all
+- Add missing args of the Strasheela def
+- Define set of accent-rules
+- Write documentation
+|#
+(PWGLDef accent-if ((accent-rules NIL)
+		    (voices 0)
+		    (metric-position () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
+		    (min-rating 1)
+		    (strictness () (ccl::mk-menu-subview :menu-list '(":note" ":position" ":note-n-position")))
+		    (gracenote-mode  () (ccl::mk-menu-subview :menu-list '(":normal" ":excl-gracenotes")))
+		    &optional
+		    (rule-type  () :rule-type-mbox)
+		    (weight 1)
+		    ;; min-rating
+		    ;; strictness
+		    )
+  "
+
+"
+  ()
+  (r-note-meter #'(lambda (d_offs1 d_offs2 d_offs3)
+		    )
+		voices
+		:d_offs
+		metric-structure
+		:durations
+		gracenote-mode
+		rule-type weight))
+
+
+
+
+;;
+;; First simplified draft
+;;
 
 
 #|
@@ -253,8 +298,9 @@ If note is accented then start on a beat OR if not starts on a beat then it most
 
 ;; !! TODO: later allow for actual accent constraints to be given as args with fun expecting funs and returning a fun
 ;; TODO: 
+;; - refine model: all notes beyond a certain duration are also accented -- define this with extra rule..
 ;; - how can I take rests into account?
-;; - rule only applied when there are actually three notes in succession, i.e., not on 1st two notes?
+;; - rule only applied when there are actually three notes in succession, i.e., not to 1st two notes. In Strasheela, rule is applied in such a way that values of 1st two "args" of coresponding function can be nil
 ;;
 ;; NOTE: constraint applied to d_offs2, but only checked after d_offs3 is bound
 (defun accent-is-longer-than-predecessor-rule  (d_offs1 d_offs2 d_offs3)
@@ -268,6 +314,8 @@ If note is accented then start on a beat OR if not starts on a beat then it most
         T))))
 
 
+;; TODO: 
+;; - generalise to allow also a predefined accent structure in a voice with a fixed rhythm. See example TODO/accent-model-over-rhythm-voice.pwgl
 (PWGLDef accent-is-longer-than-predecessor 
 	 ((voices 0)
 	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
@@ -278,7 +326,7 @@ If note is accented then start on a beat OR if not starts on a beat then it most
 	 "Strait-forward but unflexible accent model implementation.
 If an accent occurs, then it is on the position defined. However, random accents can happen on the 1st or last two notes.
 
- Notes on the selected metric position (metric-structure, either :beats or :1st-beat) are rhythmically accented: such note is longer than the preceeding note and not shorter than the succeeding note.
+Notes on the selected metric position (metric-structure, either :beats or :1st-beat) are rhythmically accented: such note is longer than the preceeding note and not shorter than the succeeding note.
 
 All arguments are inherited from r-note-meter." 
 	 ()
