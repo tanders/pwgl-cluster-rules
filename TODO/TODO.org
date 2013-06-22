@@ -1,16 +1,5 @@
 
-
-* Incorporate Orjan's test-seq-follows-markov-chain? as rule
-
-  Code already in clusterengine
-
-
 * Other rule ideas
-
-** Longish note before rest
-
-   or accent before rest..
-
 
 ** Heuristic rule -- prefer scale (or chord) roots
    
@@ -18,6 +7,21 @@
 
 
 ** Strasheela rules 
+
+*** ! Rhythm
+
+**** !! Re-implement Strasheela accent model in cluster engine
+
+     [[file:~/PWGL-User/User-library/cluster-rules/sources/rhythm-rules.lisp::%3B%3B%3B%20Accent%20Model][file:~/PWGL-User/User-library/cluster-rules/sources/rhythm-rules.lisp::;;; Accent Model]]
+
+     Difficult, because I have no meta constraints (no reified constraints), so constraints cannot be combined. 
+     Also, limited score contexts.
+ 
+
+**** Longish note before rest
+
+     or accent before rest..
+
 
 *** Harmony
 
@@ -426,13 +430,28 @@
    CLOSED: [2013-06-20 Thu 16:46]
 
 
-* Define rule to follow underlying irregular metric grid
+* !! Define rule to follow underlying irregular metric grid
 
-  First check out Orjan's already existing ways to tweak the accent structure of certain time signatures. However, likely this is not flexible enough (e.g., for different claves different accent structures of the same time signature are needed).
+  See draft at [[file:///Users/torsten/PWGL-User/User-library/cluster-rules/TODO/accent-model-over-rhythm-voice.pwgl][accent-model-over-rhythm-voice.pwgl]]
 
   Metric grid defined by extra voice in resulting score: each note represents a strong beat (even different strength of beat could be represented with different pitches)
 
   Rule implements (simplified form) of accent model where accents fall on strong beats are represented by that extra voice
+
+  See also [[*!!%20Re-implement%20Strasheela%20accent%20model%20in%20cluster%20engine][!! Re-implement Strasheela accent model in cluster engine]]
+
+** Old								    :ARCHIVE:
+
+  First check out Orjan's already existing ways to tweak the accent structure of certain time signatures. 
+  -> Different beat duration can be defined, but beat dur is always regular
+
+  However, likely this is not flexible enough (e.g., for different claves different accent structures of the same time signature are needed).
+
+
+* Incorporate Orjan's test-seq-follows-markov-chain? as rule
+
+  Code already in clusterengine
+
 
 
 * Update terminology: rules..
