@@ -267,12 +267,13 @@ TODO: Revise this definition -- can the interplay with unequal-sim-PCs-aux be si
 
 
 ;; TODO:
-;; - !! Automatically reduce PC-number internally, if the number of sim pitches is snmaller due to rests (some pitch = NIL)
 ;; - ? Add additional input modes that not only take harmonic slices but all tones within a certain time frame into account, namely a full beat duration, a full bar duration, the beginning of a new harmony, and the whole duration of a harmony -- likely the current implementation of r-pitch-pitch does not allow for these cases.
 ;; - ? Improve efficiency: shall I internally also call r-pitch-pitch with subsets of voices and with a reduced PC-number? That will help the solver, but that possibly also restricts the range of possible solutions.
 ;; - ?? Have PC-number controlled with BPF? Possibly the current implementation of r-pitch-pitch does not allow for that. Also, that would restrict the would only work if underlying harmony allows for that, but could be useful 
+;; - OK Automatically reduce PC-number internally, if the number of sim pitches is snmaller due to rests (some pitch = NIL)
 (PWGLDef number-of-sim-PCs ((PC-number 2)
 			    (condition () (ccl::mk-menu-subview :menu-list '(":min" ":equal" ":max")))
+			    (rests-mode () (ccl::mk-menu-subview :menu-list '(":reduce-no" ":ignore")))
 			    (voices '(0 1))
 			    (timepoints '(0))
 			    (input-mode  () (ccl::mk-menu-subview :menu-list '(":all" ":beat" ":1st-beat" ":1st-voice" ":at-timepoints")))
@@ -280,23 +281,30 @@ TODO: Revise this definition -- can the interplay with unequal-sim-PCs-aux be si
 			    &optional
 			    (rule-type () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
 			    (weight 1))
-	 "Controls the number of simultaneous pitch classes. Useful, for example, to require that some underlying harmony is fully expressed.
+	 "Controls the number of simultaneous pitch classes. Useful, for example, to require that some underlying harmony is expressed.
 
 Args: 
-PC-number: the number of the simultaneous PCs. The meaning of this setting depends on the argument condition.
-condition: Whether the number of simultaneous pitch classes should be at least the given PC-number (:min), or exactly that number (:equal), or at most that number (:max). 
-voices: the list of voices to which the rule is applied.
+  PC-number (int): the number of the simultaneous PCs. The meaning of this setting depends on the argument condition.
+  condition: Whether the number of simultaneous pitch classes should be at least the given PC-number (:min), or exactly that number (:equal), or at most that number (:max). 
+  rests-mode: If set to :reduce-no, then the number of simultaneous pitch classes is subtracted from PC-number. For example, if there is only a single tone at a certain time and all other voices have rests, this rule can still be fulfilled. By contrast, if rests-mode is set to :ignore, then the remaining simultaneous pitch classes must still fullfil the condition expressed by the arguments PC-number and condition.
+  voices: the list of voices to which the rule is applied.
+  
 
 Other arguments are inherited from r-pitch-pitch."
 	 () 
 	 (r-pitch-pitch #'(lambda (pitches)
-			    (let ((harm (remove-duplicates (pw::g-mod pitches 12))))
+			    (let ((actual-number (case rests-mode
+						   (:reduce-no (- PC-number
+								  (length (remove NIL pitches :test-not #'eql))))
+						   (:ignore PC-number)))
+				  (harm (remove NIL ;; take out rests
+					  (remove-duplicates (pw::g-mod pitches 12)))))
 			      (if harm				  
 			        (funcall (case condition
 					   (:min #'>=)
 					   (:equal #'=)
 					   (:max #'<=))
-				   (length harm) PC-number)
+				   (length harm) actual-number)
 			      t)))
 			voices
 			timepoints
