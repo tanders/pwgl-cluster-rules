@@ -1,6 +1,19 @@
 
 * Other rule ideas
 
+** Melodic rules 
+
+*** Ballistic curve of pitches...
+
+** Rhythm rules 
+
+*** Restrict rest duration
+
+    - Restrict consecutive rest durations
+    - Restrict total number of rests within a certain time window
+    - Restrict accumulated rest duration within a certain time window
+
+
 ** Heuristic rule -- prefer scale (or chord) roots
    
    Slight preference for the scale (chord?) PC -- amount of preference controllable with an argument]
@@ -43,7 +56,9 @@
 
 *** Melody
 
-**** No more / at least / exactly N notes of given voice(s) ascending/descending/in same direction
+**** set-intervals: No more / at least / exactly N notes of given voice(s) ascending/descending/in same direction :ARCHIVE:
+
+     s-pmc-n-ascending-rule
 
      N can be controlled with BPF
 
@@ -51,12 +66,15 @@
      (:TRUE/FALSE * ?1 ?2 ?3 ?4 (?IF (NOT (< (M ?1) (M ?2) (M ?3) (M ?4)))))
 
 
-**** Disallow/require certain melodic intervals (intervals given as list)
+**** restrict-consecutive-directions: Disallow/require certain melodic intervals (intervals given as list) :ARCHIVE:
+
+     see s-pmc-allowed-interval-rule
 
      special arg sets whether intervals are absolute (up or down) or only for given direction (pos or neg)
 
 
      (:TRUE/FALSE * ?1 ?2 (?IF (MEMBER (ABS (- (M ?2) (M ?1))) (QUOTE (1 2 3)))))
+
 
 
 **** The [accumulative] interval between the pitches of N notes is smaller / greater than interval I
@@ -72,7 +90,7 @@
      (this could be avoided by constraining all combinations of consecutive intervals up to N)
 
 
-**** Resolve skips
+**** resolve-skips: Resolve skips 				    :ARCHIVE:
 
     If there is a skip >= than set interval SKIP, then the next interval should be <= set interval RESOLUTION (in the opposite direction ?)
  
@@ -85,6 +103,7 @@
         T
       (AND (< (ABS INT2) 2) (NOT (= (SIGNUM INT1) (SIGNUM INT2))))))))
     
+
 
 *** Harmony
 
