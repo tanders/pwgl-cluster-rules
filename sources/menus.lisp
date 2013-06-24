@@ -13,7 +13,10 @@
      ("rhythm"  (no-two-consecutive-syncopations no-syncopation only-simple-syncopations only-simple-tuplet-offs
 		 start-with-rest
 		 accent-is-longer-than-predecessor))
-     ("melody"  (no-direct-repetition no-repetition min/max-interval durations-control-intervals))
+     ("melody"  (min/max-interval set-intervals no-direct-repetition no-repetition 
+		 restrict-consecutive-directions resolve-skips
+		 durations-control-intervals
+		 ))
      ("harmony"  (only-scale-PCs only-chord-PCs chord-tone-before/after-rest
 		  chord-PC-at-1st-tone-HACK stepwise-non-chord-tone-resolution 
 		  unequal-sim-PCs number-of-sim-PCs no-empty-sim-consonances-2parts

@@ -4,7 +4,7 @@
 ;; pitch-profile-hr
 
 ;; TODO:
-;; - !! Efficiency: change mapped-profile from list into array for faster access during search -- see PWConstraints example.. 
+;; - !! Efficiency: change mapped-profile from list into array/vector for faster access during search -- see PWConstraints example.. 
 ;; - generalise this def for rhythms -- work in progress.
 ;; - ? Add support for "simple score format" by Kilian -- I can more easily transform such scores before handing them over 
 ;;   -> postpone until I actually need it
@@ -218,8 +218,9 @@ Optional arguments are inherited from r-pitches-one-voice."
 
 
 ;; min/max-melodic-interval
+
 ;; TODO: 
-;; - !! Efficiency: use array instead of list 
+;; - !! Efficiency: use array/vector instead of list 
 (PWGLDef min/max-interval ((voices 0)
 			   &key
 			   (min-interval NIL)
@@ -294,6 +295,42 @@ Args rule-type and weight inherited from r-pitches-one-voice."
 				weight)))
 
 
+;; set-intervals
+
+(PWGLDef set-intervals ((intervals ())
+			(absolute? () (ccl::mk-menu-subview :menu-list '(":absolute" ":up/down")))
+			(mode () (ccl::mk-menu-subview :menu-list '(":only-given" ":exclude-given")))
+			(voices 0)
+			&optional
+			(rule-type () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+			(weight 1))
+	 "Restricts the melodic intervals to those intervals specified. 
+
+Args:
+  intervals (list of ints): Specified intervals.
+  absolute?: Controls whether the direction of the intervals is taken into account. The direction can be specified with a sign (positive for upwards, negative for downwards). If absolute? is set to :absolute, then the specified intervals can be used for any direction. By contrast, :up/down takes the sign of the given intervals into account.
+  mode: Controls whether to only use the given intervals (:only-given), or whether to only use intervals that are not given (:exclude-given).
+
+Other arguments are inherited from R-pitches-one-voice."
+	 () 
+	 (R-pitches-one-voice #'(lambda (pitch1 pitch2)
+				  (if (and pitch1 pitch2) ; no rests
+				      (let* ((interval (- pitch2 pitch1))
+					     (member? (member (case absolute?
+								(:up/down interval)
+								(:absolute (abs interval)))
+							      (case absolute?
+								(:up/down intervals)
+								(:absolute (mapcar #'abs intervals))))))
+					(case mode
+					  (:only-given member?)
+					  (:exclude-given (not member?))))
+				    T))
+	   voices :pitches rule-type weight))
+
+
+;; durations-control-intervals
+
 (PWGLDef durations-control-intervals ((rel-factor 32)
 				      (acc-factor 2)
 				      &optional
@@ -324,3 +361,82 @@ Optional arguments are inherited from r-rhythm-pitch-one-voice."
 				   voices :rhythm/pitch :exclude-gracenotes rule-type weight))
 
 
+;; restrict-consecutive-directions
+
+;; TODO: 
+;; - allow n to be controlled by a BPF
+(PWGLDef restrict-consecutive-directions ((n 4)
+					  (direction () (ccl::mk-menu-subview :menu-list 
+							 '(":either" ":either-strict"
+							   ":ascending" ":ascending-strict"
+							   ":descending" ":descending-strict")))
+					  ;; (condition () (ccl::mk-menu-subview :menu-list '(":at-most" ":exactly" ":at-least")))
+					  ;; "condition: Which restriction to apply? If :at-most, then at most n notes can be connected by intervals of the same given direction, and so forth."
+					  (voices 0)
+					  &optional
+					  (rule-type () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+					  (weight 1))
+	 "This rule controls how many consecutive intervals can be ascending or descending. At most n notes can be connected by intervals of the same direction.
+
+Args:
+  n (int): How many consecutive notes are taken into account?  
+  direction: Which interval direction is taken into account? For example, :ascending means that the rule only looks at consecutive ascending intervals. Without the ending -strict, note repetitions are also counted as the same direction. 
+
+In case of intermitting rests the rule is not applied.
+
+Other arguments are inherited from R-pitches-one-voice."
+	 () 
+	 (R-pitches-one-voice #'(lambda (all-pitches)
+				  (let ((pitches (last all-pitches (1+ n))))
+				    (if (and (= (length pitches) (1+ n))
+					     (every #'(lambda (p) (not (null p))) pitches)) ; no rests
+					(progn 
+					  ;; (format t "restrict-consecutive-directions: all-pitches: ~A, ~%   pitches: ~A~%" 
+					  ;; 	  all-pitches pitches)
+					  (not 
+					   (case direction
+					     (:ascending (apply #'<= pitches))
+					     (:ascending-strict (apply #'< pitches))
+					     (:descending (apply #'>= pitches))
+					     (:descending-strict (apply #'> pitches))
+					     (:either (or (apply #'<= pitches)
+							  (apply #'>= pitches)))
+					     (:either-strict (or (apply #'< pitches)
+								 (apply #'> pitches))))))
+				      T)))
+	  voices :all-pitches rule-type weight))
+
+
+;; resolve-skips
+
+;; To-do: 
+;; - ?? allow n to be controlled by a BPF
+(PWGLDef resolve-skips ((skip-size 6)
+			(resolution-size 2)
+			(repetition? () (ccl::mk-menu-subview :menu-list '(":disallow" ":allow")))
+			(voices 0)
+			&optional
+			(rule-type () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+			(weight 1))
+	 "Resolve any skip larger than skip-size by an interval in the opposite direction.
+
+Args:
+  skip-size: The minimum interval size (in semitones) that triggers this rule.
+  resolution-size: The maximum interval size that is allowed as a resolution.
+  repetition?: Whether or not tone repetitions are allowed as resolution.
+
+Other arguments are inherited from R-pitches-one-voice."
+	 () 
+	 (R-pitches-one-voice #'(lambda (pitch1 pitch2 pitch3)
+				  (if (and pitch1 pitch2 pitch3) ; no rests
+				      (let ((int1 (- pitch2 pitch1)) 
+					    (int2 (- pitch3 pitch2)))
+					(if (>= (abs int1) skip-size)
+					  (and (<= (abs int2) resolution-size)
+					       (/= (signum int1) (signum int2))
+					       (case repetition?
+						 (:disallow (> (abs int2) 0))
+						 (:allow T)))
+					  T))
+				    T))
+	  voices :pitches rule-type weight))
