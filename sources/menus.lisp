@@ -21,7 +21,7 @@
 		  chord-PC-at-1st-tone-HACK stepwise-non-chord-tone-resolution 
 		  unequal-sim-PCs number-of-sim-PCs no-empty-sim-consonances-2parts
 		  tintinnabuli-M-voice tintinnabuli-T-voice))
-     ("counterpoint"  (no-voice-crossing))
+     ("counterpoint"  (no-voice-crossing no-parallels))
      ("score" (voice->durations voice->pitches))
      ("utilities"  (file-in-this-directory read-lisp-file read-harmony-file))
      ))))

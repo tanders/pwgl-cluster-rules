@@ -116,3 +116,19 @@ pc-transposition: integer added to all chord/scale pitch classes. Useful for dis
   ())
 
 |#
+
+
+;;;
+;;; List processing
+;;;
+
+(defun map-pairwise (fn xs)
+  "Collects the result of applying the binary function gn on all pairwise combinations of elements in xs, i.e.,11 ((fn xs1 xs2) .. (fn xs1 xsN) (fn xs2 xs3) .. (fn xsN-1 xsN))."
+  (if xs 
+      (let ((x1 (first xs))
+	    (xr (rest xs)))
+	(append (mapcar #'(lambda (x2) (funcall fn x1 x2)) xr)
+		(map-pairwise fn xr)))
+    NIL))
+
+

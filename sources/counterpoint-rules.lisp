@@ -20,3 +20,49 @@ Arguments are inherited from r-pitch-pitch."
 			input-mode
 			gracenotes?
 			rule-type weight))
+
+
+;; no-parallels
+
+(PWGLDef no-parallels ((mode () (ccl::mk-menu-subview :menu-list '(":open" ":open-and-hidden")))
+		       (intervals '(0 7))
+		       (voices '(0 1))
+		       (gracenotes?  () :gracenotes?-include-mbox)
+		       &optional
+		       (rule-type  () :rule-type-mbox)
+		       (weight 1))
+	 "Parallels of given intervals are prohibited between all combinations of the given voices.
+
+Args:
+intervals (list of ints): Specifies the intervals (as pitch classes) of of which parallels should be avoided. 
+mode: Specifies whether only open or also hidden intervals should be avoided.
+
+Other arguments are inherited from r-pitch-pitch."
+	 () 
+	 (map-pairwise
+	  #'(lambda (voice1 voice2)
+	      (r-pitch-pitch #'(lambda (pitches1 pitches2)
+				 (if (every #'(lambda (p) p) (append pitches1 pitches2))  ; no rests -- no NILs
+				     (let* ((pitch1a (first pitches1)) ; 1st and 2nd pitch of voice A and voice B
+					    (pitch1b (second pitches1))
+					    (pitch2a (first pitches2))
+					    (pitch2b (second pitches2))
+					    (harm-interval2 (mod (abs (- pitch2b pitch2a)) 12)) 
+					    (matchingInterval2? (member harm-interval2 intervals)))
+				       (case mode
+					 (:open-and-hidden (if matchingInterval2? 
+							       (let ((directionA (signum (- pitch1a pitch2a)))  
+								     (directionB (signum (- pitch1b pitch2b))))
+								 (/= directionA directionB))
+							     T))
+					 (:open (if matchingInterval2? 
+						    (let ((harm-interval1 (mod (abs (- pitch1b pitch1a)) 12))) 
+						      (/= harm-interval1 harm-interval2))
+						  T))))
+				   T))	     
+			     (list voice1 voice2)
+			     '(0)
+			     :all
+			     gracenotes?
+			     rule-type weight))
+	  voices))
