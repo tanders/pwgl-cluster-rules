@@ -34,8 +34,8 @@ Arguments are inherited from r-pitch-pitch."
 	 "Parallels of given intervals are prohibited between all combinations of the given voices.
 
 Args:
-intervals (list of ints): Specifies the intervals (as pitch classes) of of which parallels should be avoided. 
-mode: Specifies whether only open or also hidden intervals should be avoided.
+  mode: Specifies whether only open or also hidden intervals should be avoided.
+  intervals (list of ints): Specifies the intervals (as pitch classes) of of which parallels should be avoided. 
 
 Other arguments are inherited from r-pitch-pitch."
 	 () 
