@@ -314,30 +314,43 @@ Other arguments are inherited from r-pitch-pitch."
 
 
 
-(PWGLDef no-empty-sim-consonances-2parts 
+(PWGLDef set-harmonic-intervals 
 	 ((voices 0)
+	  (intervals NIL)
+	  (mode () (ccl::mk-menu-subview :menu-list '(":exclude-given" ":only-given")))
 	  (timepoints '(0))
 	  (input-mode  10 (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
 	  (gracenotes?  10 (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
 	  &optional
 	  (rule-type  10 (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
 	  (weight 1))
-	 "Disallows a perfect consonance between sim notes -- simple version for two parts.
-All arguments are inherited from r-pitch-pitch.
+	 "Restricts the harmonic intervals between all combinations of the given voices to only (or not) those intervals specified. For example, 'empty' perfect consonances in two-voice counterpoint can be excluded with this rule. 
 
-TODO: generalise for more voices."
+Args:
+  intervals (list of ints): Specified intervals.
+  mode: Controls whether to only use the given intervals (:only-given), or whether to only use intervals that are not given (:exclude-given).
+
+Other arguments are inherited from r-pitch-pitch.
+"
 	 () 
-	 (r-pitch-pitch #'(lambda (pitches)
-			    (if (first pitches) ; no rests 
-				(let ((interval (mod (abs (- (first pitches) (second pitches))) 12)))
-				  (not (member interval '(0 5 7))))
-			      T))
-			voices
-			timepoints
-			input-mode
-			gracenotes?
-			rule-type weight))
+	 (map-pairwise
+	  #'(lambda (voice1 voice2)
+	      (r-pitch-pitch #'(lambda (pitches)
+				 (if (first pitches) ; no rests 
+				     (let ((interval (mod (abs (- (first pitches) (second pitches))) 12)))
+				       (case mode
+					 (:exclude-given (not (member interval intervals)))
+					 (:only-given (member interval intervals))))
+				   T))
+			     (list voice1 voice2)
+			     timepoints
+			     input-mode
+			     gracenotes?
+			     rule-type weight))
+	  voices))
 
+
+	  
 ;;
 ;; Tintinnabuli rules 
 ;; 

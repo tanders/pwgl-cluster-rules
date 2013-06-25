@@ -6,7 +6,7 @@
    ("Cluster Rules"
     (; ("generic" ())
      ("profile" (follow-profile-hr
-		 rhythm-profile-BPF-hr ; substituted by follow-profile-hr, can be removed?
+		 rhythm-profile-BPF-hr-ToRemove ; substituted by follow-profile-hr, can be removed?
 		 compose-functions)
 		 ("mappings" (mp-add-offset mp-multiply mp-add-random-offset))
 		 ("transformations" (trfm-scale trfm-add-BPF trfm-multiply-BPF trfm-reverse)))
@@ -19,7 +19,7 @@
 		 ))
      ("harmony"  (only-scale-PCs only-chord-PCs chord-tone-before/after-rest
 		  chord-PC-at-1st-tone-HACK stepwise-non-chord-tone-resolution 
-		  unequal-sim-PCs number-of-sim-PCs no-empty-sim-consonances-2parts
+		  unequal-sim-PCs number-of-sim-PCs set-harmonic-intervals
 		  tintinnabuli-M-voice tintinnabuli-T-voice))
      ("counterpoint"  (no-voice-crossing no-parallels))
      ("score" (voice->durations voice->pitches))
