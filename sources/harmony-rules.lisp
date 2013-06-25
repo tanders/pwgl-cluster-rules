@@ -315,39 +315,54 @@ Other arguments are inherited from r-pitch-pitch."
 
 
 (PWGLDef set-harmonic-intervals 
-	 ((voices 0)
+	 ((voices (0))
 	  (intervals NIL)
-	  (mode () (ccl::mk-menu-subview :menu-list '(":exclude-given" ":only-given")))
-	  (timepoints '(0))
-	  (input-mode  10 (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
-	  (gracenotes?  10 (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
+	  (exclude/only () (ccl::mk-menu-subview :menu-list '(":exclude-given" ":only-given")))
+	  (combinations () (ccl::mk-menu-subview :menu-list '(":over-bass" ":all-combinations")))
+	  (input-mode  () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
+	  (gracenotes? () (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
 	  &optional
-	  (rule-type  10 (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+	  (timepoints '(0))
+	  (rule-type () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
 	  (weight 1))
 	 "Restricts the harmonic intervals between all combinations of the given voices to only (or not) those intervals specified. For example, 'empty' perfect consonances in two-voice counterpoint can be excluded with this rule. 
 
 Args:
   intervals (list of ints): Specified intervals.
-  mode: Controls whether to only use the given intervals (:only-given), or whether to only use intervals that are not given (:exclude-given).
+  exclude/only: Controls whether to only use the given intervals (:only-given), or whether to only use intervals that are not given (:exclude-given).
+  combinations: Controls whether to constrain only intervals between the bass and a higher voice (:over-bass), or between all voice combinations (:all-combinations).
 
 Other arguments are inherited from r-pitch-pitch.
 "
 	 () 
-	 (map-pairwise
-	  #'(lambda (voice1 voice2)
-	      (r-pitch-pitch #'(lambda (pitches)
-				 (if (first pitches) ; no rests 
-				     (let ((interval (mod (abs (- (first pitches) (second pitches))) 12)))
-				       (case mode
-					 (:exclude-given (not (member interval intervals)))
-					 (:only-given (member interval intervals))))
-				   T))
-			     (list voice1 voice2)
-			     timepoints
-			     input-mode
-			     gracenotes?
-			     rule-type weight))
-	  voices))
+	 (flet ((rule (pitches)
+	          (if (first pitches) ; no rests 
+		      (let ((interval (mod (abs (- (first pitches) (second pitches))) 12)))
+			(case exclude/only
+			  (:exclude-given (not (member interval intervals)))
+			  (:only-given (member interval intervals))))
+		    T)))    
+	 (let ((sorted-voices (sort voices #'>)))
+	   (case combinations 
+	     (:over-bass 
+	      (let ((bass-voice (first sorted-voices)))
+		(mapcar #'(lambda (voice)
+			    (r-pitch-pitch #'rule
+					   (list bass-voice voice)
+					   timepoints
+					   input-mode
+					   gracenotes?
+					   rule-type weight)) 
+			    (rest sorted-voices))))
+	     (:all-combinations
+	      (map-pairwise #'(lambda (voice1 voice2)
+				(r-pitch-pitch #'rule
+					       (list voice1 voice2)
+					       timepoints
+					       input-mode
+					       gracenotes?
+					       rule-type weight)) 
+			    sorted-voices))))))
 
 
 	  
