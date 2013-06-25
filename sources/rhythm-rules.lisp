@@ -25,7 +25,9 @@
 
 ;; rhythm-profile-BPF-hr
 
-(PWGLDef rhythm-profile-BPF-hr 
+;; TODO:
+;; - Make sure this rule is fully substituted by follow-profile-hr -- including its examples
+(PWGLDef rhythm-profile-BPF-hr-ToRemove 
 	 ((voices 0)
 	  (BPF NIL)
 	  (n 0)
