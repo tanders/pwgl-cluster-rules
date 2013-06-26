@@ -25,38 +25,67 @@
 
 ;; rhythm-profile-BPF-hr
 
-;; TODO:
-;; - Make sure this rule is fully substituted by follow-profile-hr -- including its examples
-(PWGLDef rhythm-profile-BPF-hr-ToRemove 
+;; TODO: rests can occur at any position of a note
+(PWGLDef rhythm-profile-BPF-hr 
 	 ((voices 0)
-	  (BPF NIL)
 	  (n 0)
+	  (BPFs NIL)
 	  (min-scaling 1/16)
 	  (max-scaling 1)
-	  (rnd-deviation 0.3))
-	 "Heuristic constraint: rhythmic values essentially follow a BPF. However, the BPF is slightly processed. Firstly, it can be somewhat randomised (amount chosen with rnd-deviation, see below). Secondly, the BPF values are scaled into the interval [min-scaling, max-scaling]. Also, the BPF becomes somewhat 'curved' (using power 3) to address the distribution of rhythmic values (e.g., 1/16, 1/8, 1/4..) [the latter is a HACK].  
+	  &key
+	  (rnd-deviation 0)
+	  (permutate #'identity))
+	 "Heuristic constraint: rhythmic values essentially follow a BPF. However, the BPF is slightly processed. Firstly, the BPF values are scaled into the interval [min-scaling, max-scaling]. Secondly, the BPF can be somewhat randomised (amount chosen with rnd-deviation, see below). Also, the BPF becomes somewhat 'curved' (using power 3) to address the distribution of rhythmic values (e.g., 1/16, 1/8, 1/4..) [the latter is a HACK].  
+
+Note that the rule follow-profile-hr is more flexible than the rule rhythm-profile-BPF-hr, but this rule is more easy to use for its purposes. Also, this rule allows for rests to occur at any position of a note (with the same duration).
 
 Args:
-voices (int or list of ints): the voice(s) to which the constraint is applied.
-n (int): number of notes/durs
-BPF (a BPF): the BPF to follow. The BPF assumes values between 0 and 1 (curve done with power changes otherwise).
-min-scaling (positive number): min dur (e.g, 1/16)
-max-scaling (positive number): max dur
-rnd-deviation (float): amount by which the resulting value for the heuristic deviates from given BPF. 0 means no deviation, 0.5 means the value may deviate up to halve the original BPF value (to either side)."
-	 ()
-	 (let* ((BPF-xs (pw::g-scaling (pw::g-power (ccl::pwgl-sample BPF n) 3)
-					min-scaling max-scaling))
-		(abs-rnd-deviation (abs rnd-deviation))
-		(rnds (loop for i from 1 to n
-		 	    collect (pw::g-random (* abs-rnd-deviation -1) abs-rnd-deviation)))
-		(BPF-rnd-xs (pw::g+ BPF-xs (pw::g* BPF-xs rnds))))
-	   (hr-rhythms-one-voice #'(lambda (xs) 
-				     "Returns a heuristic -- better BPF matches are preferred. Essentially, returns the abs difference between current dur and corresponding env value."
-				     (- 1000 (* (abs (- (first (last xs)) (nth (1- (length xs)) 
-									       BPF-rnd-xs))) 
-						100)))		       
-				 voices
-				 :list-with-all-durations)))
+  voices (int or list of ints): the voice(s) to which the constraint is applied.
+  n (int): number of notes
+  BPFs (a BPF or list of BPFs): the BPF to follow. 
+  min-scaling (positive number): min dur (e.g, 1/16)
+  max-scaling (positive number): max dur
+
+Keyword args:
+  rnd-deviation (float): amount by which the resulting value for the heuristic deviates from given BPF. 0 means no deviation, 0.5 means the value may deviate up to 50 percent (to either side).
+  permutate (a function): arbitrary permutations of the BPF can be defined by a function expecting a list of numbers and returning a list of numbers of the same length. Such permutations are applied after all internal processing of the BPF. 
+
+NOTE: This rule can apply different BPFs to different voices with different settings. If a list of BPFs is given, then a different BPF is given to each of the voices listed. In that case, all other arguments (except n) can be either single values that are shared by all voices, or a list of different values for the different voices.
+"
+	 (:groupings '(3 2))
+	 (let ((l (length (if (listp BPFs) BPFs (list BPFs)))))
+	   (mappend #'(lambda (BPF voice min-scaling max-scaling rnd-deviation permutate)
+			;; (format T "rhythm-profile-BPF-hr: args: ~A ~%" 
+			;; 	(list BPF voice min-scaling max-scaling rnd-deviation permutate))
+			(let* ((BPF-xs (pw::g-scaling (pw::g-power (pw::g-scaling (ccl::pwgl-sample BPF n) 
+										  0 1) 
+								   3)
+						      min-scaling max-scaling))
+			       (abs-rnd-deviation (abs rnd-deviation))
+			       (rnds (loop for i from 1 to n
+					   collect (pw::g-random (* abs-rnd-deviation -1) abs-rnd-deviation)))
+			       (BPF-rnd-xs (funcall permutate (pw::g+ BPF-xs (pw::g* BPF-xs rnds)))))
+			  (hr-rhythms-one-voice #'(lambda (xs) 
+						    "Returns a heuristic -- better BPF matches are preferred. Essentially, returns the abs difference between current dur and corresponding env value."
+						    ;; (format T "rhythm-profile-BPF-hr: BPF-rnd-xs: ~A ~%" BPF-rnd-xs)
+						    (- 1000 (* (abs 
+								;; abs: both rests and note can occur
+								(- (abs (first (last xs))) 
+								   (abs (nth (1- (length xs)) 
+									     BPF-rnd-xs)))) 
+							       100)))		       
+						voice
+						:list-with-all-durations)))
+		    (if (listp BPFs) BPFs (list BPFs))
+		    ;; if only a single voice but multiple BPFs are given, 
+		    ;; then only the given voice is constrained with the 1st BPF
+		    (if (listp voices) voices (list voices)) 
+		    (if (listp min-scaling) min-scaling (make-list l :initial-element min-scaling))
+		    (if (listp max-scaling) max-scaling (make-list l :initial-element max-scaling))
+		    (if (listp rnd-deviation) rnd-deviation (make-list l :initial-element rnd-deviation))
+		    (if (listp permutate) permutate (make-list l :initial-element permutate)))
+		 ))
+
 
 
 ;; no-two-consecutive-syncopations
@@ -66,7 +95,9 @@ rnd-deviation (float): amount by which the resulting value for the heuristic dev
   (or (= offs1 0)
       (= offs2 0)))
 
-;; BUG: not working? 
+;; BUG: 
+;; - not working? 
+;; - prevents rests?
 (PWGLDef no-two-consecutive-syncopations 
 	 ((voices 0)
 	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":beats" ":1st-beat")))
@@ -227,18 +258,25 @@ Intended for r-note-meter with format d_offs on beats."
 
 (PWGLDef start-with-rest ((rest-dur 0)
 			  (voices 0)
-			   &optional
-			   (rule-type  () :rule-type-mbox)
-			   (weight 1))
-	 "Start the given voice(s) with a rest of the given duration.
-Further optional arguments are inherited from r-index-rhythms-one-voice"
+			  &optional
+			  (rule-type  () :rule-type-mbox)
+			  (weight 1))
+	 "Start the given voice(s) with a rest of the given duration (either an int or a list of ints indicating a domain) If rest-dur is NIL then this means a rest of any duration is acceptable.
+
+Hint: make sure you included rests in your rhythm domain (as negative integers). 
+
+Other optional arguments are inherited from r-index-rhythms-one-voice."
 	 () 
-	 (r-index-rhythms-one-voice #'(lambda (rhythm) (= rhythm rest-dur))
-				    0
+	 (r-index-rhythms-one-voice #'(lambda (rhythm)
+					(and (< rhythm 0)
+					     (or (not rest-dur) ; rest-dur is NIL
+						 (member (abs rhythm) 
+							 (mapcar #'abs
+								 (if (listp rest-dur) rest-dur (list rest-dur)))))))
+				    '(0)
 				    voices
 				    :position-for-duration
-				    rule-type
-				    weight))
+				    rule-type weight))
 
 
 ;;;

@@ -6,7 +6,7 @@
    ("Cluster Rules"
     (; ("generic" ())
      ("profile" (follow-profile-hr
-		 rhythm-profile-BPF-hr-ToRemove ; substituted by follow-profile-hr, can be removed?
+		 rhythm-profile-BPF-hr 
 		 compose-functions)
 		 ("mappings" (mp-add-offset mp-multiply mp-add-random-offset))
 		 ("transformations" (trfm-scale trfm-add-BPF trfm-multiply-BPF trfm-reverse)))
