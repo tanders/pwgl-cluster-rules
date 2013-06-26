@@ -17,11 +17,10 @@
 ;;; Aux harmony defs
 ;;;
 
-;; ;; currently unused
-;; (defun PC-member (pitch1 pitches2)
-;;   "Returns T if the PC of pitch1 is a member in the PC set of pitches2."
-;;   (member (mod pitch1 12) 
-;;           (mapcar #'(lambda (p) (mod p 12)) pitches2)))
+(defun PC-member (pitch1 pitches2)
+  "Returns T if the PC of pitch1 is a member in the PC set of pitches2."
+  (member (mod pitch1 12) 
+          (mapcar #'(lambda (p) (mod p 12)) pitches2)))
 
 ; (defun PC-member-save (pitch1 pitches2)
 ;  "Returns T if the PC of pitch1 is a member in the PC set of pitches2. Rests (i.e. pitches that are nil) are taken care of (e.g., if pitch1 is nil then PC-member returns T."
