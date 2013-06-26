@@ -131,4 +131,8 @@ pc-transposition: integer added to all chord/scale pitch classes. Useful for dis
 		(map-pairwise fn xr)))
     NIL))
 
+(defun mappend (func &rest inlists)
+  "Apply func to each element of inlist and append the result."
+  (apply #'append (apply #'mapcar func inlists)))
+
 
