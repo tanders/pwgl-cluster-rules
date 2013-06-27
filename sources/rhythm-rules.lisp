@@ -254,6 +254,27 @@ Intended for r-note-meter with format d_offs on beats."
 		       rule-type weight))
 
 
+;; ;; TODO: 
+;; ;; - likelyhood controlled with a BPF (with random offset)
+;; (PWGLDef include-rests-hr ((voices 0)
+;; 			   ()
+;; 			   (rnd-deviation))
+;; 	 ""
+;; 	 () 
+;; 	 (let* ((BPF-xs (pw::g-scaling (pw::g-power (pw::g-scaling (ccl::pwgl-sample BPF n) 
+;; 								   0 1) 
+;; 						    3)
+;; 				       min-scaling max-scaling))
+;; 		(abs-rnd-deviation (abs rnd-deviation))
+;; 		(rnds (loop for i from 1 to n
+;; 			    collect (pw::g-random (* abs-rnd-deviation -1) abs-rnd-deviation)))
+;; 		(BPF-rnd-xs (funcall permutate (pw::g+ BPF-xs (pw::g* BPF-xs rnds)))))
+;; 	 (hr-rhythms-one-voice #'(lambda (rhythm)
+;; 				   ())
+;; 			       voices
+;; 			       :list-with-all-durations))
+
+
 ;; start-with-rest
 
 (PWGLDef start-with-rest ((rest-dur 0)
