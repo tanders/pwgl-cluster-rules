@@ -248,21 +248,22 @@ Other arguments are inherited from r-pitch-pitch."
 	  &optional
 	  (rule-type  () :rule-type-mbox)
 	  (weight 1))
-	 "Sim PCs in all given voices (ints in ascending order) are unequal to each other.
+	 "Sim PCs in all given voices are unequal to each other.
 
 Arguments are inherited from r-pitch-pitch.
 
 TODO: Revise this definition -- can the interplay with unequal-sim-PCs-aux be simplified?
 "
 	 () 
-	 (let ((len (length voices))
-	       (rev (reverse voices)))
+	 (let* ((voices (sort voices #'<))
+		(len (length voices))
+		(rev (reverse voices)))
 	   (mapcar #'(lambda (i) 
-		       (unequal-sim-PCs (subseq rev i len)
-					input-mode
-					gracenotes?
-					rule-type weight))
-		   (arithm-ser 0 1 (1- len)))))
+		       (unequal-sim-PCs-aux (subseq rev i len)
+					    input-mode
+					    gracenotes?
+					    rule-type weight))
+		   (arithm-ser 0 1 (- len 2)))))
 
 
 ;; TODO:
@@ -314,11 +315,11 @@ Other arguments are inherited from r-pitch-pitch."
 
 
 (PWGLDef set-harmonic-intervals 
-	 ((voices (0))
+	 ((voices '(0 1))
 	  (intervals NIL)
 	  (exclude/only () (ccl::mk-menu-subview :menu-list '(":exclude-given" ":only-given")))
 	  (combinations () (ccl::mk-menu-subview :menu-list '(":over-bass" ":all-combinations")))
-	  (input-mode  () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
+	  (input-mode () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
 	  (gracenotes? () (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
 	  &optional
 	  (timepoints '(0))
