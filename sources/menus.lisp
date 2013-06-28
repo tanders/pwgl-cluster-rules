@@ -13,7 +13,8 @@
      ("rhythm"  (no-two-consecutive-syncopations no-syncopation only-simple-syncopations only-simple-tuplet-offs
 		 start-with-rest
 		 accent-is-longer-than-predecessor))
-     ("melody"  (min/max-interval set-intervals no-direct-repetition no-repetition 
+     ("melody"  (min/max-interval set-intervals accumulative-interval
+		 no-direct-repetition no-repetition 
 		 restrict-consecutive-directions resolve-skips
 		 durations-control-intervals
 		 ))

@@ -329,6 +329,59 @@ Other arguments are inherited from R-pitches-one-voice."
 	   voices :pitches rule-type weight))
 
 
+;; accumulative-interval
+
+;; TODO:
+;; - Improve efficiency: Replace interval BPF list with vector
+;; - control interval with BPF -- needs index of current note given by rule applicator, otherwise this is difficult (imppssible?) to define.
+(PWGLDef accumulative-interval ((voices 0)
+				(n 2)
+				(interval 7)
+				(condition () (ccl::mk-menu-subview :menu-list '(":max" ":min" ":equal")))
+				&optional
+				(sublists () (ccl::mk-menu-subview :menu-list '(":constrain" ":ignore")))
+				(number-of-notes 0)
+				(rule-type () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+				(weight 1))
+	 "The sum of melodic intervals between the pitches of n notes is smaller / greater than the given interval. If there are any rests among the last n notes then this rule is ignored.
+
+Args:
+  n (int): number of notes involved
+  interval (int): the max/min interval
+  condition: the relation that should hold between the sum of intervals and the given interval: whether the sum should not exceed (:max) or be exactly (:equal) or be at least (:min) the given interval. 
+
+Optional args:
+  sublists: whether or not to also constrain the intervals between the last n-1, n-2 ... notes in the same way. This argument is only effective if condition is set to :max, otherwise it setting is always :ignore.
+  
+Other arguments are inherited from R-pitches-one-voice."
+	 ()
+	 (flet ((rule-application (n)
+		   (R-pitches-one-voice #'(lambda (pitches)
+					    (let ((n-pitches (last pitches n)))
+					      ;; (when BPF? (length pitches))
+					      (if (and (= (length n-pitches) n)
+						       (every #'identity pitches)) ; no rests
+						  (funcall (case condition
+							     (:max #'<=)
+							     (:min #'>=)
+							     (:equal #'=))					 
+							   (abs (- (first (last pitches)) (first pitches)))
+							   interval)
+						T)))
+					voices :all-pitches rule-type weight))) 
+ 	   ;; (let ((BPF? (ccl::break-point-function-p interval))
+	   ;; 	 (intervals (if (and BPF? (> n 0))				
+	   ;; 			(ccl::pwgl-sample profile n)
+	   ;; 		      (progn (warn "Cannot sample BPF with n set to 0") NIL))))
+	     (if (and (eql sublists :constrain)
+		      (eql condition :max))
+		 (mappend #'rule-application
+			  (arithm-ser 2 1 n))
+	       (rule-application n))))
+;; )
+
+
+
 ;; durations-control-intervals
 
 (PWGLDef durations-control-intervals ((rel-factor 32)
