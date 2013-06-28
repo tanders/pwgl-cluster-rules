@@ -332,8 +332,8 @@ Other arguments are inherited from R-pitches-one-voice."
 ;; accumulative-interval
 
 ;; TODO:
+;; - Rule for first n-1 notes ignored -- OK?
 ;; - Improve efficiency: Replace interval BPF list with vector
-;; - control interval with BPF -- needs index of current note given by rule applicator, otherwise this is difficult (imppssible?) to define.
 (PWGLDef accumulative-interval ((voices 0)
 				(n 2)
 				(interval 7)
@@ -347,38 +347,41 @@ Other arguments are inherited from R-pitches-one-voice."
 
 Args:
   n (int): number of notes involved
-  interval (int): the max/min interval
+  interval (int or BPF): the max/min interval. If a BPF, then it defines how the interval changes across the voice(s). However, in that case the arg number-of-notes must be given, otherwise the rule throws an error.
   condition: the relation that should hold between the sum of intervals and the given interval: whether the sum should not exceed (:max) or be exactly (:equal) or be at least (:min) the given interval. 
 
 Optional args:
   sublists: whether or not to also constrain the intervals between the last n-1, n-2 ... notes in the same way. This argument is only effective if condition is set to :max, otherwise it setting is always :ignore.
-  
+  number-of-notes: the number of variables set in clusterengine. This argument is required if interval is a BPF.   
+
 Other arguments are inherited from R-pitches-one-voice."
 	 ()
-	 (flet ((rule-application (n)
-		   (R-pitches-one-voice #'(lambda (pitches)
-					    (let ((n-pitches (last pitches n)))
-					      ;; (when BPF? (length pitches))
-					      (if (and (= (length n-pitches) n)
-						       (every #'identity pitches)) ; no rests
-						  (funcall (case condition
-							     (:max #'<=)
-							     (:min #'>=)
-							     (:equal #'=))					 
-							   (abs (- (first (last pitches)) (first pitches)))
-							   interval)
-						T)))
-					voices :all-pitches rule-type weight))) 
- 	   ;; (let ((BPF? (ccl::break-point-function-p interval))
-	   ;; 	 (intervals (if (and BPF? (> n 0))				
-	   ;; 			(ccl::pwgl-sample profile n)
-	   ;; 		      (progn (warn "Cannot sample BPF with n set to 0") NIL))))
+	 (let* ((BPF? (ccl::break-point-function-p interval))
+		(intervals (if (and BPF? (> number-of-notes 0))				
+			       (ccl::pwgl-sample interval number-of-notes)
+			     (when BPF?
+			       (error "accumulative-interval: Cannot sample BPF with the keyword argument number-of-notes set to its default 0.")))))
+	   (flet ((rule-application (n)
+		    (R-pitches-one-voice #'(lambda (pitches)
+					     (let ((n-pitches (last pitches n)))
+					       (if (and (= (length n-pitches) n)
+							(every #'identity pitches)) ; no rests
+						   (let ((interv (if BPF?
+								     (nth (1- (length pitches)) intervals)
+								   interval)))
+						     (funcall (case condition
+								(:max #'<=)
+								(:min #'>=)
+								(:equal #'=))					 
+							      (abs (- (first (last pitches)) (first pitches)))
+							      interv))
+						 T)))
+					 voices :all-pitches rule-type weight))) 
 	     (if (and (eql sublists :constrain)
 		      (eql condition :max))
 		 (mappend #'rule-application
 			  (arithm-ser 2 1 n))
-	       (rule-application n))))
-;; )
+	       (rule-application n)))))
 
 
 
