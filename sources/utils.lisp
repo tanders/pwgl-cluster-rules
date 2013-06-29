@@ -2,7 +2,6 @@
 
 (setf ccl::*pwgl-print-max-chars* 1000)
 
-
 ;; file-in-this-directory
 
 (PWGLDef file-in-this-directory ((filename NIL))
@@ -60,7 +59,7 @@
 		 :chordpcss))) 
 
 
-;; actual box def
+;; actual box def with multiple outputs
 (PWGLDef read-harmony-file ((path NIL) ; (nth-patch-value self 0)
 			    (dur-factor 1) ; (nth-patch-value self 1)
 			    (pc-transposition 60)) ; (nth-patch-value self 2)
@@ -116,6 +115,26 @@ pc-transposition: integer added to all chord/scale pitch classes. Useful for dis
   ())
 
 |#
+
+
+;;;
+;;; Utils for file export
+;;;
+
+(defparameter rule::*score-counter* 0 "Incrementing counter for output filename")
+
+(PWGLDef output-filename ((filename "test")
+			  &optional
+			  (sub-directory NIL)
+			  (extension ".xml"))
+	 "Generate a path in the directory of the patch with the given filename and optional extension. A subdirectory within the directory of the patch can also optionally be specified. All arguments expect strings."
+	 ()
+	 (progn
+	   (setf rule::*score-counter* (1+ rule::*score-counter*))
+	   (file-in-this-directory
+	    (concatenate 'string sub-directory "/" filename "-" 
+			 (write-to-string rule::*score-counter*) extension))))
+
 
 
 ;;;

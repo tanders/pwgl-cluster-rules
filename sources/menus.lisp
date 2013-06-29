@@ -24,6 +24,7 @@
 		  tintinnabuli-M-voice tintinnabuli-T-voice))
      ("counterpoint"  (no-voice-crossing no-parallels))
      ("score" (voice->durations voice->pitches))
-     ("utilities"  (file-in-this-directory read-lisp-file read-harmony-file))
+     ("utilities"  (file-in-this-directory read-lisp-file read-harmony-file 
+		    output-filename))
      ))))
 
