@@ -53,57 +53,7 @@
 
 
 ** Rules inspired by JBS
-
-*** Melody
-
-**** The [accumulative] interval between the pitches of N notes is smaller / greater than interval I
-
-     I can be controlled with BPF
-
-     ;; for N = 3 and Interval = 11
-     PWGL-> (:HEURISTIC * ?1 ?2 ?3 (?IF (IF (NOT (> (ABS (- (M ?3) (M ?1))) 11)) 1 0)))
-     PWGL-> (:TRUE/FALSE * ?1 ?2 ?3 (?IF (NOT (> (ABS (- (M ?3) (M ?1))) 11))))
-
-     Note: this implementation only works for interval between notes with distance N, but not anything in between 
-     E.g., in case N is 3, then the interval between direct neighbours can exceed the given interval
-     (this could be avoided by constraining all combinations of consecutive intervals up to N)
-
-
-**** set-intervals: No more / at least / exactly N notes of given voice(s) ascending/descending/in same direction :ARCHIVE:
-
-     s-pmc-n-ascending-rule
-
-     N can be controlled with BPF
-
-     N = 4
-     (:TRUE/FALSE * ?1 ?2 ?3 ?4 (?IF (NOT (< (M ?1) (M ?2) (M ?3) (M ?4)))))
-
-
-**** restrict-consecutive-directions: Disallow/require certain melodic intervals (intervals given as list) :ARCHIVE:
-
-     see s-pmc-allowed-interval-rule
-
-     special arg sets whether intervals are absolute (up or down) or only for given direction (pos or neg)
-
-
-     (:TRUE/FALSE * ?1 ?2 (?IF (MEMBER (ABS (- (M ?2) (M ?1))) (QUOTE (1 2 3)))))
-
-
-**** resolve-skips: Resolve skips 				    :ARCHIVE:
-
-    If there is a skip >= than set interval SKIP, then the next interval should be <= set interval RESOLUTION (in the opposite direction ?)
- 
-;; for SKIP=5 and RESOLUTION=2   
-(:TRUE/FALSE * ?1 ?2 ?3
- (?IF 
-  (LET ((INT1 (- (M ?2) (M ?1))) 
-        (INT2 (- (M ?3) (M ?2))))
-    (IF (< (ABS INT1) 5)
-        T
-      (AND (< (ABS INT2) 2) (NOT (= (SIGNUM INT1) (SIGNUM INT2))))))))
     
-
-
 *** Harmony
 
 **** ! Control how often a harmonic interval between two voices can be repeated
@@ -129,6 +79,8 @@
      
 
 **** ? Allowed/disallowed intervals between two voices
+
+     What of this is already covered in my set-harmonic-intervals?
 
      ? Cover all cases of the following rules?
 
@@ -185,6 +137,55 @@
      - Over the whole duration of a harmony
 
      ? Have number of PCs controlled with BPF -- that would only work if underlying harmony allows for that, but could be useful 
+
+
+*** Melody							    :ARCHIVE:
+
+**** The [accumulative] interval between the pitches of N notes is smaller / greater than interval I
+
+     I can be controlled with BPF
+
+     ;; for N = 3 and Interval = 11
+     PWGL-> (:HEURISTIC * ?1 ?2 ?3 (?IF (IF (NOT (> (ABS (- (M ?3) (M ?1))) 11)) 1 0)))
+     PWGL-> (:TRUE/FALSE * ?1 ?2 ?3 (?IF (NOT (> (ABS (- (M ?3) (M ?1))) 11))))
+
+     Note: this implementation only works for interval between notes with distance N, but not anything in between 
+     E.g., in case N is 3, then the interval between direct neighbours can exceed the given interval
+     (this could be avoided by constraining all combinations of consecutive intervals up to N)
+
+
+**** set-intervals: No more / at least / exactly N notes of given voice(s) ascending/descending/in same direction :ARCHIVE:
+
+     s-pmc-n-ascending-rule
+
+     N can be controlled with BPF
+
+     N = 4
+     (:TRUE/FALSE * ?1 ?2 ?3 ?4 (?IF (NOT (< (M ?1) (M ?2) (M ?3) (M ?4)))))
+
+
+**** restrict-consecutive-directions: Disallow/require certain melodic intervals (intervals given as list) :ARCHIVE:
+
+     see s-pmc-allowed-interval-rule
+
+     special arg sets whether intervals are absolute (up or down) or only for given direction (pos or neg)
+
+
+     (:TRUE/FALSE * ?1 ?2 (?IF (MEMBER (ABS (- (M ?2) (M ?1))) (QUOTE (1 2 3)))))
+
+
+**** resolve-skips: Resolve skips 				    :ARCHIVE:
+
+    If there is a skip >= than set interval SKIP, then the next interval should be <= set interval RESOLUTION (in the opposite direction ?)
+ 
+;; for SKIP=5 and RESOLUTION=2   
+(:TRUE/FALSE * ?1 ?2 ?3
+ (?IF 
+  (LET ((INT1 (- (M ?2) (M ?1))) 
+        (INT2 (- (M ?3) (M ?2))))
+    (IF (< (ABS INT1) 5)
+        T
+      (AND (< (ABS INT2) 2) (NOT (= (SIGNUM INT1) (SIGNUM INT2))))))))
 
 
 *** Counterpoint						    :ARCHIVE:
