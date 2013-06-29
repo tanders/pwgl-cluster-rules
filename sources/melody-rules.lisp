@@ -333,6 +333,7 @@ Other arguments are inherited from R-pitches-one-voice."
 
 ;; TODO:
 ;; - Rule for first n-1 notes ignored -- OK?
+;; - Test rule further -- do settings work and make sense?
 ;; - Improve efficiency: Replace interval BPF list with vector
 (PWGLDef accumulative-interval ((voices 0)
 				(n 2)
