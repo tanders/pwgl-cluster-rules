@@ -13,13 +13,18 @@
 
 Arguments are inherited from r-pitch-pitch."
 	 () 
-	 (r-pitch-pitch #'(lambda (pitches)
-			    (apply #'>= (remove NIL pitches))) ; no rests -- no NILs			     
-			voices
-			'(0)
-			input-mode
-			gracenotes?
-			rule-type weight))
+	 (let ((sorted-voices (sort voices #'<)))
+	   (mapcar #'(lambda (voice1 voice2)
+		       (r-pitch-pitch #'(lambda (pitches)
+					  ;; no rests -- no NILs
+					  (apply #'>= (remove NIL pitches))) 
+				      (list voice1 voice2)
+				      '(0)
+				      input-mode
+				      gracenotes?
+				      rule-type weight))
+		   (butlast sorted-voices)
+		   (rest sorted-voices))))
 
 
 ;; no-parallels
@@ -66,3 +71,5 @@ Other arguments are inherited from r-pitch-pitch."
 			     gracenotes?
 			     rule-type weight))
 	  voices))
+
+
