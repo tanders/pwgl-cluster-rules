@@ -344,18 +344,79 @@ What I could easily do is apply multiple accent rules independently. However, I 
 
 |#
 
+;;;
+;;; Accent model: top-level definitions
+;;;
 
-;;
-;; First simplified draft
-;;
+;; TODO: for metric-accents and accents-in-other-voice
+;; 
+;; - Allow for different working modes, defined in Strasheela as strictness
+;;   (strictness () (ccl::mk-menu-subview :menu-list '(":note" ":position" ":note-n-position")))
+;; - Fix problems of accent-longer-than-predecessor-ar with first/last notes
+;; - Try combining accent constraints, where either accent constraint can be met
+(PWGLDef metric-accents
+	 ((voices 0)
+	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor")))
+	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
+	  (gracenote-mode  () (ccl::mk-menu-subview :menu-list '(":normal" ":excl-gracenotes")))
+	  &optional
+	  (rule-type  () :rule-type-mbox)
+	  (weight 1))
+	 "If an accent occurs, then it is on the position defined. 
+
+Args:
+  accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8) 
+Some accent rules are predefined and can be simply selected in the menu of the argument. Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
+
+Other arguments are inherited from r-note-meter.
+" 
+	 ()
+	 (r-note-meter (case accent-rule
+			 (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+			 (otherwise accent-rule))
+		       voices
+		       :d_offs
+		       metric-structure
+		       :incl-rests
+		       gracenote-mode
+		       rule-type weight))
 
 
-#|
-Strasheela doc from IsLongerThanPredecessor
-Note N is longer than the preceeding note and not shorter than succeeding note (duration + offsetTime used for calculating the perceived duration). If a preceeding or succeeding note does not exist (in the same temporal container) then the constraint returns 0.
+(PWGLDef accents-in-other-voice
+	 ((voices 0)
+	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor")))
+	  &optional
+	  (accents-voice 3)
+	  (rule-type  () :rule-type-mbox)
+	  (weight 1))
+	 "If an accent occurs, then it is on the position defined. 
 
-If note is accented then start on a beat OR if not starts on a beat then it most accented.
-|#
+Args:
+  voices (int or list of ints): the numbers of voice(s) to constrain.
+
+  accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8) 
+Some accent rules are predefined and can be simply selected in the menu of the argument. Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
+
+  accents-voice: the number of the voice that defines accents. Each note onset in accents-voice is taken as an accent for the given voices.
+
+Other arguments are inherited from r-rhythm-rhythm.
+" 
+	 ()
+	 (mapcar #'(lambda (voice)
+		     (r-rhythm-rhythm (case accent-rule
+					(:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+					(otherwise accent-rule))
+				      voice
+				      accents-voice
+				      :d1_offs
+				      :norm
+				      :at-durations-v1				    
+				      ))
+		 (if (listp voices) voices (list voices))))
+
+;;;
+;;; Accent model: predefined accent rules
+;;;
 
 ;; !! TODO: later allow for actual accent constraints to be given as args with fun expecting funs and returning a fun
 ;; TODO: 
@@ -364,8 +425,8 @@ If note is accented then start on a beat OR if not starts on a beat then it most
 ;; - rule only applied when there are actually three notes in succession, i.e., not to 1st two notes. In Strasheela, rule is applied in such a way that values of 1st two "args" of coresponding function can be nil
 ;;
 ;; NOTE: constraint applied to d_offs2, but only checked after d_offs3 is bound
-(defun accent-is-longer-than-predecessor-rule  (d_offs1 d_offs2 d_offs3)
-  "Strait-forward but unflexible accent model implementation."
+(defun accent-longer-than-predecessor-ar  (d_offs1 d_offs2 d_offs3)
+  "Accent rule for metric-accents or accents-in-other-voice. Accented notes are longer than the preceeding note and at least as long as the succeeding note."
   (destructuring-bind ((dur1 offs1) (dur2 offs2) (dur3 offs3)) (list d_offs1 d_offs2 d_offs3)
     (if (every #'plusp (list dur1 dur2 dur3)) ; no rests 
 	(let ((accent-rating2 (and (< dur1 dur2) (>= dur2 dur3))))
@@ -376,77 +437,130 @@ If note is accented then start on a beat OR if not starts on a beat then it most
 	    T))
       T)))
 
-(defun accent-has-at-least-duration-rule (d_offs)
-  (destructuring-bind (dur offs) d_offs
-    (if (plusp dur) ; no rest
-	(let ((accent-rating (>= dur min-duration)))
-	  ;; If note is accented then start on what is set at metric-structure, 
-	  ;; e.g., on beat (but there can be beats etc. without accent)
-	  (if accent-rating
-	      (= offs 0) 
-	    T))
-      T)))
+
+(PWGLDef mk-accent-has-at-least-duration-ar ((min-duration 1/4))
+  "Returns an accent rule for metric-accents or accents-in-other-voice. Accented notes are at least min-duration long."
+  ()
+  #'(lambda (d_offs)
+      (destructuring-bind (dur offs) d_offs
+	(if (plusp dur) ; no rest
+	    (let ((accent-rating (>= dur min-duration)))
+	      ;; If note is accented then start on what is set at metric-structure, 
+	      ;; e.g., on beat (but there can be beats etc. without accent)
+	      (if accent-rating
+		  (= offs 0) 
+		T))
+	  T))))
 
 
-;; TODO: 
-;; - generalise to allow also a predefined accent structure in a voice with a fixed rhythm. See example TODO/accent-model-over-rhythm-voice.pwgl
-;; - Allow for different strictness settings: (":note" ":position" ":note-n-position")
-;; - combine with other accent constraints into single def, where rules can be selected
-;; 
-;; BUG:
-;; - Random accents can happen on the 1st or last two notes. -- Fix by additional index rule applications to those notes. (then remove bug notice in doc string)
-(PWGLDef accent-is-longer-than-predecessor 
-	 ((voices 0)
-	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
-	  (gracenote-mode  () (ccl::mk-menu-subview :menu-list '(":normal" ":excl-gracenotes")))
-	  &optional
-	  (rule-type  () :rule-type-mbox)
-	  (weight 1))
-	 "Strait-forward but unflexible accent model implementation.
-If an accent occurs, then it is on the position defined. 
-
-Notes on the selected metric position (metric-structure, either :beats or :1st-beat) are rhythmically accented: such note is longer than the preceeding note and not shorter than the succeeding note.
-
-All arguments are inherited from r-note-meter.
-
-Bugs:
-- Random accents can happen on the 1st or last two notes. 
-" 
-	 ()
-	 (r-note-meter #'accent-is-longer-than-predecessor-rule
-		       voices
-		       :d_offs
-		       metric-structure
-		       :incl-rests
-		       gracenote-mode
-		       rule-type weight))
 
 
-;; TODO:
-;; - see comments for accent-is-longer-than-predecessor 
-(PWGLDef accent-has-at-least-duration
-	 ((voices 0)
-	  (min-duration 1/4)
-	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
-	  (gracenote-mode  () (ccl::mk-menu-subview :menu-list '(":normal" ":excl-gracenotes")))
-	  &optional
-	  (rule-type  () :rule-type-mbox)
-	  (weight 1))
-	 "Strait-forward but unflexible accent model implementation.
-If an accent occurs, then it is on the position defined. 
 
-Notes on the selected metric position are rhythmically accented by having at least the set min-duration.
+;; ;;
+;; ;; First simplified draft
+;; ;; TODO: Remove once more general model is defined
+;; ;;
 
-Other arguments are inherited from r-note-meter.
-" 
-	 ()
-	 (r-note-meter #'accent-has-at-least-duration-rule
-		       voices
-		       :d_offs
-		       metric-structure
-		       :incl-rests
-		       gracenote-mode
-		       rule-type weight))
+
+;; #|
+;; Strasheela doc from IsLongerThanPredecessor
+;; Note N is longer than the preceeding note and not shorter than succeeding note (duration + offsetTime used for calculating the perceived duration). If a preceeding or succeeding note does not exist (in the same temporal container) then the constraint returns 0.
+
+;; If note is accented then start on a beat OR if not starts on a beat then it most accented.
+;; |#
+
+;; ;; !! TODO: later allow for actual accent constraints to be given as args with fun expecting funs and returning a fun
+;; ;; TODO: 
+;; ;; - refine model: all notes beyond a certain duration are also accented -- define this with extra rule..
+;; ;; - how can I take rests into account?
+;; ;; - rule only applied when there are actually three notes in succession, i.e., not to 1st two notes. In Strasheela, rule is applied in such a way that values of 1st two "args" of coresponding function can be nil
+;; ;;
+;; ;; NOTE: constraint applied to d_offs2, but only checked after d_offs3 is bound
+;; (defun accent-is-longer-than-predecessor-rule  (d_offs1 d_offs2 d_offs3)
+;;   "Strait-forward but unflexible accent model implementation."
+;;   (destructuring-bind ((dur1 offs1) (dur2 offs2) (dur3 offs3)) (list d_offs1 d_offs2 d_offs3)
+;;     (if (every #'plusp (list dur1 dur2 dur3)) ; no rests 
+;; 	(let ((accent-rating2 (and (< dur1 dur2) (>= dur2 dur3))))
+;; 	  ;; If note is accented then start on what is set at metric-structure, e.g., on beat (but there can be beats etc. without accent)
+;; 	  (if accent-rating2
+;; 					; (> accent-rating2 0) ;; use when generalised later...
+;; 	      (= offs2 0) 
+;; 	    T))
+;;       T)))
+
+;; (defun accent-has-at-least-duration-rule (d_offs)
+;;   (destructuring-bind (dur offs) d_offs
+;;     (if (plusp dur) ; no rest
+;; 	(let ((accent-rating (>= dur min-duration)))
+;; 	  ;; If note is accented then start on what is set at metric-structure, 
+;; 	  ;; e.g., on beat (but there can be beats etc. without accent)
+;; 	  (if accent-rating
+;; 	      (= offs 0) 
+;; 	    T))
+;;       T)))
+
+
+;; ;; TODO: 
+;; ;; - generalise to allow also a predefined accent structure in a voice with a fixed rhythm. See example TODO/accent-model-over-rhythm-voice.pwgl
+;; ;; - Allow for different strictness settings: (":note" ":position" ":note-n-position")
+;; ;; - combine with other accent constraints into single def, where rules can be selected
+;; ;; 
+;; ;; BUG:
+;; ;; - Random accents can happen on the 1st or last two notes. -- Fix by additional index rule applications to those notes. (then remove bug notice in doc string)
+;; (PWGLDef accent-is-longer-than-predecessor 
+;; 	 ((voices 0)
+;; 	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
+;; 	  (gracenote-mode  () (ccl::mk-menu-subview :menu-list '(":normal" ":excl-gracenotes")))
+;; 	  &optional
+;; 	  (rule-type  () :rule-type-mbox)
+;; 	  (weight 1))
+;; 	 "Strait-forward but unflexible accent model implementation.
+;; If an accent occurs, then it is on the position defined. 
+
+;; Notes on the selected metric position (metric-structure, either :beats or :1st-beat) are rhythmically accented: such note is longer than the preceeding note and not shorter than the succeeding note.
+
+;; All arguments are inherited from r-note-meter.
+
+;; Bugs:
+;; - Random accents can happen on the 1st or last two notes. 
+;; " 
+;; 	 ()
+;; 	 (r-note-meter #'accent-is-longer-than-predecessor-rule
+;; 		       voices
+;; 		       :d_offs
+;; 		       metric-structure
+;; 		       :incl-rests
+;; 		       gracenote-mode
+;; 		       rule-type weight))
+
+
+;; ;; TODO:
+;; ;; - see comments for accent-is-longer-than-predecessor 
+;; (PWGLDef accent-has-at-least-duration
+;; 	 ((voices 0)
+;; 	  (min-duration 1/4)
+;; 	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
+;; 	  (gracenote-mode  () (ccl::mk-menu-subview :menu-list '(":normal" ":excl-gracenotes")))
+;; 	  &optional
+;; 	  (rule-type  () :rule-type-mbox)
+;; 	  (weight 1))
+;; 	 "Strait-forward but unflexible accent model implementation.
+;; If an accent occurs, then it is on the position defined. 
+
+;; Notes on the selected metric position are rhythmically accented by having at least the set min-duration.
+
+;; Other arguments are inherited from r-note-meter.
+;; " 
+;; 	 ()
+;; 	 (r-note-meter #'accent-has-at-least-duration-rule
+;; 		       voices
+;; 		       :d_offs
+;; 		       metric-structure
+;; 		       :incl-rests
+;; 		       gracenote-mode
+;; 		       rule-type weight))
+
+
 
 
 #|
