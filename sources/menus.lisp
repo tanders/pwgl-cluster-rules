@@ -12,8 +12,7 @@
 		 ("transformations" (trfm-scale trfm-add-BPF trfm-multiply-BPF trfm-reverse)))
      ("rhythm"  (no-two-consecutive-syncopations no-syncopation only-simple-syncopations only-simple-tuplet-offs
 		 start-with-rest
-		 accent-is-longer-than-predecessor
-
+		 ; accent-is-longer-than-predecessor
 		 metric-accents
 		 accents-in-other-voice)
                  ("accent rules" (mk-accent-has-at-least-duration-ar)))
