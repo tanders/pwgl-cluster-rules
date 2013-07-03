@@ -312,9 +312,7 @@ What I could easily do is apply multiple accent rules independently. However, I 
 
 
 ;; TODO:
-- Decide: should different accent rules have access to different information (different format settings: :offs, :d_offs, :d_offs_m, :d_offs_m_n)? For now assume the same setting for all
 - Add missing args of the Strasheela def
-- Define set of accent-rules
 - Write documentation
 
 ;; (PWGLDef accent-if ((accent-rules NIL)
@@ -352,27 +350,42 @@ What I could easily do is apply multiple accent rules independently. However, I 
 ;; 
 ;; - Allow for different working modes, defined in Strasheela as strictness
 ;;   (strictness () (ccl::mk-menu-subview :menu-list '(":note" ":position" ":note-n-position")))
+;; - Define set of accent-rules
 ;; - Fix problems of accent-longer-than-predecessor-ar with first/last notes
 ;; - Try combining accent constraints, where either accent constraint can be met
+;; - Decide: should different accent rules have access to different information (different format settings: :offs, :d_offs, :d_offs_m, :d_offs_m_n)? Perhaps you better defined different boxes for such cases? For now assume the same setting for all
 (PWGLDef metric-accents
 	 ((voices 0)
-	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor")))
 	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
+	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
+							     ":longer-than-neighbours")))
 	  (gracenote-mode  () (ccl::mk-menu-subview :menu-list '(":normal" ":excl-gracenotes")))
 	  &optional
 	  (rule-type  () :rule-type-mbox)
 	  (weight 1))
-	 "If an accent occurs, then it is on the position defined. 
+	 "Restricts where metric accents occur depending on the underlying meter. 
+
+If an accent occurs, then it is on the position defined. 
 
 Args:
+  metric-structure: position where accents are controlled (on any beat or the first beat of a measure).
+
   accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8) 
-Some accent rules are predefined and can be simply selected in the menu of the argument. Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
+
+  Some accent rules are predefined and can be simply selected in the menu of the argument. 
+    :longer-than-predecessor: Accented notes are longer than the preceeding note and at least as long as the succeeding note. BUG: not constrained for first and last 2 notes!
+    :longer-than-neighbours: Accented notes are longer than the preceeding and the succeeding note. BUG: not constrained for first and last 2 notes! 
+
+  Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
+
+  
 
 Other arguments are inherited from r-note-meter.
 " 
 	 ()
 	 (r-note-meter (case accent-rule
 			 (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+			 (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
 			 (otherwise accent-rule))
 		       voices
 		       :d_offs
@@ -384,18 +397,23 @@ Other arguments are inherited from r-note-meter.
 
 (PWGLDef accents-in-other-voice
 	 ((voices 0)
-	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor")))
+	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
+							     ":longer-than-neighbours")))
 	  &optional
 	  (accents-voice 3)
 	  (rule-type  () :rule-type-mbox)
 	  (weight 1))
-	 "If an accent occurs, then it is on the position defined. 
+	 "Restricts where metric accents occur depending on the note onsets defined in an 'accents voice'.
+
+If an accent occurs, then it is on the position defined. 
 
 Args:
   voices (int or list of ints): the numbers of voice(s) to constrain.
 
-  accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8) 
+  accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8). A note is 'on' the accent if its offset = 0. 
 Some accent rules are predefined and can be simply selected in the menu of the argument. Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
+
+Optional args:
 
   accents-voice: the number of the voice that defines accents. Each note onset in accents-voice is taken as an accent for the given voices.
 
@@ -405,6 +423,7 @@ Other arguments are inherited from r-rhythm-rhythm.
 	 (mapcar #'(lambda (voice)
 		     (r-rhythm-rhythm (case accent-rule
 					(:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+					(:longer-than-neighbours #'accent-longer-than-neighbours-ar)
 					(otherwise accent-rule))
 				      voice
 				      accents-voice
@@ -437,6 +456,17 @@ Other arguments are inherited from r-rhythm-rhythm.
 	    T))
       T)))
 
+(defun accent-longer-than-neighbours-ar  (d_offs1 d_offs2 d_offs3)
+  "Accent rule for metric-accents or accents-in-other-voice. Accented notes are longer than the preceeding and the succeeding note."
+  (destructuring-bind ((dur1 offs1) (dur2 offs2) (dur3 offs3)) (list d_offs1 d_offs2 d_offs3)
+    (if (every #'plusp (list dur1 dur2 dur3)) ; no rests 
+	(let ((accent-rating2 (< dur1 dur2 dur3)))
+	  ;; If note is accented then start on what is set at metric-structure, e.g., on beat (but there can be beats etc. without accent)
+	  (if accent-rating2
+					; (> accent-rating2 0) ;; use when generalised later...
+	      (= offs2 0) 
+	    T))
+      T)))
 
 (PWGLDef mk-accent-has-at-least-duration-ar ((min-duration 1/4))
   "Returns an accent rule for metric-accents or accents-in-other-voice. Accented notes are at least min-duration long."
@@ -445,15 +475,42 @@ Other arguments are inherited from r-rhythm-rhythm.
       (destructuring-bind (dur offs) d_offs
 	(if (plusp dur) ; no rest
 	    (let ((accent-rating (>= dur min-duration)))
-	      ;; If note is accented then start on what is set at metric-structure, 
-	      ;; e.g., on beat (but there can be beats etc. without accent)
 	      (if accent-rating
 		  (= offs 0) 
 		T))
 	  T))))
 
 
+;; Unused -- just test for possible future development, depending on development of the Cluster Engine itself
+;; BUG: test case that does not work -- see comment at accent-strictness 
+(PWGLDef mk-accent-has-at-least-duration-ar_test-with-strictness ((strictness () (ccl::mk-menu-subview :menu-list '(":note" ":position" ":note-n-position")))
+					     (min-duration 1/4))
+  "Returns an accent rule for metric-accents or accents-in-other-voice. Accented notes are at least min-duration long."
+  ()
+  #'(lambda (d_offs)
+      (destructuring-bind (dur offs) d_offs
+	(if (plusp dur) ; no rest
+	    (let ((accented-note? (>= dur min-duration))
+		  (on-position? (= offs 0)))
+	      (accent-strictness strictness accented-note? on-position?))
+	  T))))
 
+
+;; Unused -- just test for possible future development, depending on development of the Cluster Engine itself
+;; BUG: for strictness :position this must be applied for all notes, not just the notes on the selected position. However, then I need to get access to metric position (i.e., on start of measure) within rule. However, R-note-meter does not support giving such information, so I would loose the argument metric-structure for the rule metric-accents.
+(defun accent-strictness (strictness accented-note? on-position?)
+  "Controls which constrain is applied between accented-note? (Boolean whether note follows accent constraint) and on-position? (Boolean whether note is on the position of a metric accent). 
+
+Arg strictness is a keyword switching bewtween three cases.
+  :note  -- any accented note is situated on a metric accent (but there can be metric accents without a note)
+  :position -- any metric accent has an accented note (but there can accented notes also elsewhere)
+  :note-n-position -- any accented note is situated on a metric accent and any metric accent has an accented note 
+"
+  (case strictness
+    (:note (if accented-note? on-position? T))
+    ;; BUG: on-position? T if note is starting with any beat, but must not be the "current" beat
+    (:position (if on-position? accented-note? T))
+    (:note-n-position (and on-position? accented-note?))))
 
 
 ;; ;;
