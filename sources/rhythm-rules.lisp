@@ -373,12 +373,10 @@ Args:
   accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8) 
 
   Some accent rules are predefined and can be simply selected in the menu of the argument. 
-    :longer-than-predecessor: Accented notes are longer than the preceeding note and at least as long as the succeeding note. BUG: not constrained for first and last 2 notes!
+    :longer-than-predecessor: Accented notes are longer than the preceeding note and at least as long as the succeeding note. BUG: not constrained for first and last 2 notes! (fixing that needs more flexible rule applicators)
     :longer-than-neighbours: Accented notes are longer than the preceeding and the succeeding note. BUG: not constrained for first and last 2 notes! 
 
   Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
-
-  
 
 Other arguments are inherited from r-note-meter.
 " 
