@@ -1,9 +1,23 @@
 
+* Refactoring
+
+  Note: cluster engine arg no-of-vars: 
+  - If any vector of variables (pitches, durations of different voices etc) reaches that number, then the search stops
+  - Note: each pitch or rhythm motif is only a single variable
+
+  Profile rules currently depend on the number of variables. 
+  - Use rule set-end for examples of such profile rules (my constraints need reimplementation of set-end for rules that are functions and not PWGL code)
+
+  !! Alternative: profiles should depend on the time point (accumulated durations), i.e., always using and x and y value from a profile.
+  - stop-rule-time stops the search once it reaches the set limit
+
+
 * Other rule ideas
 
 ** Melodic rules 
 
 *** Ballistic curve of pitches...
+
 
 ** Rhythm rules 
 
@@ -218,6 +232,8 @@
 
 
      
+
+*** Morphology rules 
 
 *** Utils
 
