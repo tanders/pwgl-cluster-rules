@@ -69,6 +69,7 @@ Other arguments are inherited from r-pitch-pitch."
 				    '(0)
 				    input-mode
 				    gracenotes?
+				    :pitch
 				    rule-type weight))
 	   (if (listp voices) voices (list voices))))
 
@@ -98,6 +99,7 @@ Other arguments are inherited from r-pitch-pitch. For example, it is possible to
 				    '(0)
 				    input-mode
 				    gracenotes?
+				    :pitch
 				    rule-type weight))
 	   (if (listp voices) voices (list voices))))
 
@@ -135,6 +137,7 @@ Other arguments are inherited from r-pitch-pitch."
 				    '(0)
 				    input-mode
 				    gracenotes?
+				    :pitch
 				    rule-type weight))
 	   (if (listp voices) voices (list voices))))
 		 
@@ -213,6 +216,7 @@ Other arguments are inherited from r-pitch-pitch."
 				    '(0)
 				    input-mode
 				    gracenotes?
+				    :pitch
 				    rule-type weight))
 	   (if (listp voices) voices (list voices))))
 
@@ -239,6 +243,7 @@ Other arguments are inherited from r-pitch-pitch."
 			'(0)
 			input-mode
 			gracenotes?
+			:pitch
 			rule-type weight))
 
 (PWGLDef unequal-sim-PCs
@@ -310,6 +315,7 @@ Other arguments are inherited from r-pitch-pitch."
 			timepoints
 			input-mode
 			gracenotes?
+			:pitch
 			rule-type weight))
 
 
@@ -352,6 +358,7 @@ Other arguments are inherited from r-pitch-pitch.
 					   timepoints
 					   input-mode
 					   gracenotes?
+					   :pitch
 					   rule-type weight)) 
 			    (rest sorted-voices))))
 	     (:all-combinations
@@ -361,6 +368,7 @@ Other arguments are inherited from r-pitch-pitch.
 					       timepoints
 					       input-mode
 					       gracenotes?
+					       :pitch
 					       rule-type weight)) 
 			    sorted-voices))))))
 

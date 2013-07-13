@@ -22,6 +22,7 @@ Arguments are inherited from r-pitch-pitch."
 				      '(0)
 				      input-mode
 				      gracenotes?
+				      :pitch
 				      rule-type weight))
 		   (butlast sorted-voices)
 		   (rest sorted-voices))))
@@ -69,6 +70,7 @@ Other arguments are inherited from r-pitch-pitch."
 			     '(0)
 			     :all
 			     gracenotes?
+			     :pitch
 			     rule-type weight))
 	  voices))
 
