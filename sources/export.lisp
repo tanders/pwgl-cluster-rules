@@ -1,7 +1,10 @@
 (in-package :cluster-rules)
 
-;; ;; TMP: for getting some patch running again
-;; (defun accent-is-longer-than-predecessor (&rest args)
+;; (defun rhythm-profile-bpf-hr-toremove (&rest args)
 ;;   'bal)
-;; (export '(accent-is-longer-than-predecessor)
+
+;; ;; ;; TMP: for getting some patch running again
+;; ;; (defun accent-is-longer-than-predecessor (&rest args)
+;; ;;   'bal)
+;; (export '(rhythm-profile-bpf-hr-toremove)
 ;; 	:cluster-rules)
