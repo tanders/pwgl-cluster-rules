@@ -1,18 +1,86 @@
 
 * Refactoring
 
-  Note: cluster engine arg no-of-vars: 
-  - If any vector of variables (pitches, durations of different voices etc) reaches that number, then the search stops
-  - Note: each pitch or rhythm motif is only a single variable
+** Implement changes of updated cluster library
 
-  Profile rules currently depend on the number of variables. 
-  - Use rule set-end for examples of such profile rules (my constraints need reimplementation of set-end for rules that are functions and not PWGL code)
+   - OK r-pitch-pitch has added arg
+     format: :pitch
 
-  !! Alternative: profiles should depend on the time point (accumulated durations), i.e., always using and x and y value from a profile.
-  - stop-rule-time stops the search once it reaches the set limit
+   - ? rule on dur + pitch: start time accessible in rule
+
+   - meter domain: allows for irregular beat durations -- extend example on metric accents
+
+
+** Consider revising profile rules (or add alternative implementations)
+
+   Note: cluster engine arg no-of-vars: 
+   - If any vector of variables (pitches, durations of different voices etc) reaches that number, then the search stops
+   - Note: each pitch or rhythm motif is only a single variable
+
+   Profile rules currently depend on the number of variables. 
+   - Use rule set-end for examples of such profile rules (my constraints need reimplementation of set-end for rules that are functions and not PWGL code)
+
+   !! Alternative: profiles should depend on the time point (accumulated durations), i.e., always using and x and y value from a profile.
+   - stop-rule-time stops the search once it reaches the set limit
 
 
 * Other rule ideas
+
+** Crazy rules
+
+*** Motifs fitting exactly into one bar (Hans T)
+
+    Have a whole motifs defined so that they fit exactly into a single measure
+
+    Constrain with r-meter-note that any motif starts exactly on a bar
+
+
+*** No notes of different voices starting at same time -- onsets never coincide
+
+    cluster library, tutorial 009b.polyphonic-rhythm 
+
+*** Grace notes
+
+    - Control how many grace notes can occur in sequence
+
+    - Specify that grace notes should be coming from a different harmony (e.g., NOT underlying harmony)
+
+
+*** cluster rules tutorial example
+
+    Rules one voice 3: 
+    - Have a certain pitch after a rest, and after that only increase in pitch
+
+    
+
+*** Ready-made rules in cluster library
+
+    Move these into some sub menu of the cluster library menus to make clear that these are just copies from another library
+
+    E.g., rhythm/clusterlibrary/<rule>
+
+**** one voice
+
+     r-mel-interval-one-voice -> melody
+
+     r-metric-hierarchy
+
+
+**** rules two voices
+
+     r-rhythm-hierarchy
+     
+     r-canon -> counterpoint
+
+
+**** Rules of more than two voices
+
+     r-chords -> harmony
+
+**** ?? All of Jacopo's PWGL rules?
+
+     r-jbs-one-voice 
+
 
 ** Melodic rules 
 
@@ -66,7 +134,7 @@
      Control which tone can be / must not be in the bass (chord root is the 1st tone of any underlying harmony)
 
 
-** Rules inspired by JBS
+** Rules inspired by Jacopo
     
 *** Harmony
 
@@ -153,6 +221,11 @@
      ? Have number of PCs controlled with BPF -- that would only work if underlying harmony allows for that, but could be useful 
 
 
+     
+
+*** Morphology rules 
+
+
 *** Melody							    :ARCHIVE:
 
 **** The [accumulative] interval between the pitches of N notes is smaller / greater than interval I
@@ -230,10 +303,6 @@
 
 **** Hidden parallels -- s-pmc-hidden-parallel-rule		    :ARCHIVE:
 
-
-     
-
-*** Morphology rules 
 
 *** Utils
 
