@@ -319,12 +319,13 @@ Other arguments are inherited from r-pitch-pitch."
 			rule-type weight))
 
 
-
+;; TODO: def a similar box where max/min intervals can be defined
 (PWGLDef set-harmonic-intervals 
 	 ((voices '(0 1))
 	  (intervals NIL)
+	  (pcs? () (ccl::mk-menu-subview :menu-list '(":pitches" ":pcs")))
 	  (exclude/only () (ccl::mk-menu-subview :menu-list '(":exclude-given" ":only-given")))
-	  (combinations () (ccl::mk-menu-subview :menu-list '(":over-bass" ":all-combinations")))
+	  (combinations () (ccl::mk-menu-subview :menu-list '(":over-bass" ":consecutive-voices" ":all-combinations")))
 	  (input-mode () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
 	  (gracenotes? () (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
 	  &optional
@@ -335,15 +336,18 @@ Other arguments are inherited from r-pitch-pitch."
 
 Args:
   intervals (list of ints): Specified intervals.
+  pcs?: whether absolute intervals or PC intervals should be used. 
   exclude/only: Controls whether to only use the given intervals (:only-given), or whether to only use intervals that are not given (:exclude-given).
-  combinations: Controls whether to constrain only intervals between the bass and a higher voice (:over-bass), or between all voice combinations (:all-combinations).
+  combinations: Controls whether to constrain only intervals between the bass and a higher voice (:over-bass), between pairs of consecutive voices such as soprano-alto, alto-tenor etc. (:consecutive-voices), or between all voice combinations (:all-combinations).
 
 Other arguments are inherited from r-pitch-pitch.
 "
 	 () 
 	 (flet ((rule (pitches)
 	          (if (first pitches) ; no rests 
-		      (let ((interval (mod (abs (- (first pitches) (second pitches))) 12)))
+		      (let ((interval (case pcs?
+					(:pitches (abs (- (first pitches) (second pitches))))
+					(:pcs (mod (abs (- (first pitches) (second pitches))) 12)))))
 			(case exclude/only
 			  (:exclude-given (not (member interval intervals)))
 			  (:only-given (member interval intervals))))
@@ -361,6 +365,16 @@ Other arguments are inherited from r-pitch-pitch.
 					   :pitch
 					   rule-type weight)) 
 			    (rest sorted-voices))))
+	     (:consecutive-voices
+	      (mapcar #'(lambda (voice1 voice2)
+			  (r-pitch-pitch #'rule
+					 (list voice1 voice2)
+					 timepoints
+					 input-mode
+					 gracenotes?
+					 :pitch
+					 rule-type weight)) 
+		      (butlast sorted-voices) (rest sorted-voices)))
 	     (:all-combinations
 	      (map-pairwise #'(lambda (voice1 voice2)
 				(r-pitch-pitch #'rule
