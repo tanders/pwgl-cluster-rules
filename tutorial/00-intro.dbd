@@ -17,5 +17,8 @@ Note that the reference documentation often refers to the documentation of other
 
 This library uses the term rule only for the cases (i) and (iii). For clarity we refer to Cluster Engine boxes like r-pitches-one-voice and r-pitch-pitch as rule applicators. If we want to be specific, we call values returned by such Cluster Engine boxes applied rules.
 
-This library defines primarily applied rules (as a rule of thumb, if we are saying 'rule' in the documentation we usually mean applied rules). Such rules you can directly connect to the box rules->cluster."
+This library defines primarily applied rules (as a rule of thumb, if we are saying 'rule' in the documentation we usually mean applied rules). Such rules you can directly connect to the box rules->cluster.
+
+Some applied rules are already defined in the library Cluster Engine and for convenience are linked in the menu of this library (for clarity in submenus called Cluster Engine.
+"
 
