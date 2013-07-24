@@ -20,6 +20,23 @@
 
 
 ;;;
+;;; Aux
+;;;
+
+(defun is-rest? (dur) 
+  "dur is a rest -- a negative number"
+  (< dur 0))
+
+(defun is-note? (dur) 
+  "dur is a note -- a positive number"
+  (> dur 0))
+
+(defun is-grace-note? (dur) 
+  "dur is a grace note with duration ="
+  (= dur 0))
+
+
+;;;
 ;;; Rhythmic rules/constraints
 ;;;
 
@@ -67,7 +84,8 @@ NOTE: This rule can apply different BPFs to different voices with different sett
 			       (BPF-rnd-xs (funcall permutate (pw::g+ BPF-xs (pw::g* BPF-xs rnds)))))
 			  (hr-rhythms-one-voice #'(lambda (xs) 
 						    "Returns a heuristic -- better BPF matches are preferred. Essentially, returns the abs difference between current dur and corresponding env value."
-						    ;; (format T "rhythm-profile-BPF-hr: BPF-rnd-xs: ~A ~%" BPF-rnd-xs)
+						    (format T "rhythm-profile-BPF-hr: xs: ~A, BPF-rnd-xs: ~A ~%" 
+							    xs BPF-rnd-xs)
 						    (- 1000 (* (abs 
 								;; abs: both rests and note can occur
 								(- (abs (first (last xs))) 
@@ -298,6 +316,129 @@ Other optional arguments are inherited from r-index-rhythms-one-voice."
 				    voices
 				    :position-for-duration
 				    rule-type weight))
+
+
+
+
+;; metric-offset-of-motif
+
+(PWGLDef metric-offset-of-motif ((metric-offset 0)
+				 (voices 0)
+				 (metric-structure () (ccl::mk-menu-subview :menu-list '(":beats" ":1st-beat")))
+				 (grid 1/4)
+				 &optional
+				 (min-motif-length NIL)
+				 (rule-type  () :rule-type-mbox)
+				 (weight 1))
+	 "Motifs must start metric-offset away from set beat. Motifs starting with rests are not constrained.
+
+Args:
+  metric-offset (ratio): How far should motifs be shifted with respect to the metric-structure? For example, if metric-offset is -1/8, then motifs will be shifted to start an eighths note before the beat (or bar). 
+  grid (ratio): Motifs could be longer than a beat (or bar) so that this rule would be checked more than once. If a motif is longer than the set grid, it will only be checked at its beginning whether its metric offset is as set. 
+
+Optional arg:
+  min-motif-length (int): motifs with a length below this setting are uneffected.
+
+Other arguments are inherited from R-meter-note.
+"
+	 () 
+	 (r-meter-note #'(lambda (offs_motif)
+			   (let ((offs (first offs_motif))
+				 (motif (second offs_motif)))
+			     (if (and (> (first motif) 0) ; motif starting with note?
+				      (and (not NIL)
+					   (>= (length motif) min-motif-length)))
+				 (or ;; is motif on set position?
+				  (= (- offs metric-offset) 0)
+				  ;; if checked per beat, motif is potentially longer than a single beat
+				  (<= offs (* -1 grid)))
+			       T)))
+		       voices
+		       metric-structure
+		       :offset_motif
+		       :norm
+		       rule-type weight))
+
+
+;; minimum-phrase-dur
+
+;; TODO: 
+;; - !! Efficiency: change internal BPF representation from list into array/vector for faster access during search -- see PWConstraints example.. 
+;; - OK Make min-phrase-length controllable by a BPF
+;; - OK Consider introducing min/max/exactly switch for the phrase-length
+;; - OK Allow for several rests to occur consecutively
+;; - NO Consider interface change: have optional settings for min and max
+(PWGLDef phrase-length ((phrase-length 0)
+			;; (skipped-durs-no 0)
+			(relation  () (ccl::mk-menu-subview :menu-list '(":min" ":max")))
+			(voices 0)
+			&optional
+			(n 1)
+			(rule-type  () :rule-type-mbox)
+			(weight 1))
+	 "This rule controls the number of notes and grace notes between rests (the length of phrases). 
+
+Args:
+  phrase-length (int): The set number of notes between rests. Consecutive rests (effectively longer rests) can occur freely.
+  relation: Whether the set phrase length is the required minimum or maximum. (If you want to constrain both the upper and lower boundary then simply use two of these rules.)
+
+BUG: Strangely, at least one motif of the rhythm domain must have at least length 2. Not yet sure why..
+
+Other arguments are inherited from R-rhythms-one-voice
+"
+	 () 
+	 (let ((BPF-vals (if (ccl::break-point-function-p phrase-length)
+			     (ccl::pwgl-sample phrase-length n)
+			   phrase-length)))
+	   (R-rhythms-one-voice 
+	    #'(lambda (durs)
+		(let ((curr-phrase-length (if (ccl::break-point-function-p phrase-length)
+					      (nth (length durs) BPF-vals)
+					    phrase-length))
+		      (rev-durs (reverse durs)))
+		  (if (second rev-durs) ; there are at least two items
+		      (case relation
+			(:min (if (and (is-rest? (first rev-durs)) 
+				       (not (is-rest? (second rev-durs)))) ; rests can follow each other
+				  (let ((prev-rest-pos (position-if #'is-rest? (rest rev-durs))))
+				    (if prev-rest-pos ; there has been a rest before
+					(<= curr-phrase-length prev-rest-pos) ; tested on rest
+				      (<= curr-phrase-length (length rev-durs))))
+				T))
+			(:max (if (and (not (is-rest? (first rev-durs))))
+				  (let ((prev-rest-pos (position-if #'is-rest? (rest rev-durs))))
+				    (if prev-rest-pos ; there has been a rest before
+					(>= (1- curr-phrase-length) prev-rest-pos) ; tested on note
+				      (>= curr-phrase-length (length rev-durs))))
+				T))
+			))))	
+	    ;; (let ((rev-durs (reverse durs)))
+	    ;; 	(if (and (second rev-durs) ; there are at least two items
+	    ;; 		 ;; (case relation
+	    ;; 		 ;;   (:min (and 
+	    ;; 		 ;; 	  (< (first rev-durs) 0) ; current item is a rest
+	    ;; 		 ;; 	  (> (second rev-durs) 0))) ; previous dur is not rest
+	    ;; 		 ;;   (:max (> (first rev-durs) 0))) ; current item is a note
+	    ;; 		 (< (first rev-durs) 0) ; current item is a rest
+	    ;; 		 (> (second rev-durs) 0) ; previous dur is not rest
+	    ;; 		 ) 
+	    ;; 	    (let ((prev-rest-pos (position-if #'(lambda (x) (< x 0))
+	    ;; 					      (rest rev-durs))))
+	    ;; 	      ;; TODO: revise case where that have not been rests befoer
+	    ;; 	      (if prev-rest-pos ; there has been a rest before
+	    ;; 		  (funcall (case relation
+	    ;; 			     (:min #'>=)
+	    ;; 			     (:max #'<=)
+	    ;; 			     ;; (:equal #'=)
+	    ;; 			     )						       
+	    ;; 			   prev-rest-pos phrase-length)
+	    ;; 		T))
+	    ;; 	  T))
+	    voices
+	    :all-durations
+	    rule-type weight)))
+
+
 
 
 ;;;
