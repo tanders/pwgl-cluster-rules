@@ -58,3 +58,50 @@ rationalize? (Boolean): If the score has a constant tempo of 60, then durations 
 			    (T (list (ccl::midi (first (ccl::collect-enp-objects c :note)))))))
 		  (ccl::collect-enp-objects (first (ccl::collect-enp-objects voice :voice)) 
 					    :chord)))
+
+
+
+
+;;
+;; Set clefs for a score
+;;
+;; Definitions inspired by Julien Vincenot
+;;
+
+(ccl::add-box-type :staff-types-scroll 
+  `(ccl::mk-menu-subview :menu-list 
+     ,(ccl::add-menu-list-keyword :staff-types '("treble-staff" "alto-staff" "tenor-staff" "bass-staff" "percussion-staff" "piano-staff"))
+     :value 0))
+(PWGLDef set-staff-clefs ((score '())
+			  (clef 'treble-staff :staff-types-scroll) 
+			  &rest (clefs 'treble-staff :staff-types-scroll))
+	 "Set the clef of successive staves by extending and scrolling menus.
+
+Definition inspired Julien Vincenot"
+	 (:groupings '(1 1))
+	 (let ((all-clefs (cons clef clefs)))
+	   (system::enp-script score        
+			       (loop for clef in all-clefs
+				     for index in (pw::arithm-ser 1 1 (length all-clefs))
+				     collect 
+				     `(* ?1 :partnum (list ,index)
+					 (ccl::?if 
+					  (setf (ccl::staff (ccl::read-key ?1 :part))
+						(ccl::make-instance ',clef)))))
+			       NIL)))
+
+
+(PWGLDef set-staff-instruments 
+	 ((score '()) &rest (instruments 'piano))
+	  ;; (instruments () (ccl::mk-menu-subview :menu-list '(":beats" ":1st-beat")))
+	 "Set the instruments of successive staves."
+	 (:groupings '(1 1))
+	 (system::enp-script score        
+			     (loop for instr in instruments
+				   for index in (pw::arithm-ser 1 1 (length instruments))
+				   collect 
+				   `(* ?1 :partnum (list ,index)
+				       (ccl::?if 
+					(setf (ccl::instrument (ccl::read-key ?1 :part))
+					      (ccl::make-instance ',instr)))))
+			     NIL))
