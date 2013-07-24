@@ -1,32 +1,60 @@
 
+* Check out examples by Orjan
+
+  [[file:///Users/torsten/PWGL-User/User-library/cluster-rules/TODO/examplesToCheckFromOerjan/][examplesToCheckFromOerjan]]
+
+
 * Refactoring
 
-** Implement changes of updated cluster library
+** BUG of min/max-interval
+
+   min/max-interval: weight argument gets wrong menu
+
+** Implement changes of updated cluster library			    :ARCHIVE:
+
+   - ?? extend example on metric accents -- allows for irregular beat durations
 
    - OK r-pitch-pitch has added arg
      format: :pitch
 
-   - ? rule on dur + pitch: start time accessible in rule
-
-   - meter domain: allows for irregular beat durations -- extend example on metric accents
 
 
-** Consider revising profile rules (or add alternative implementations)
+* Profile rules 
 
-   Note: cluster engine arg no-of-vars: 
-   - If any vector of variables (pitches, durations of different voices etc) reaches that number, then the search stops
-   - Note: each pitch or rhythm motif is only a single variable
+** DONE follow-profile-hr
+   CLOSED: [2013-07-14 Sun 12:18]
 
-   Profile rules currently depend on the number of variables. 
-   - Use rule set-end for examples of such profile rules (my constraints need reimplementation of set-end for rules that are functions and not PWGL code)
+   Additional arg: start index (i.e. profile can start later)
 
-   !! Alternative: profiles should depend on the time point (accumulated durations), i.e., always using and x and y value from a profile.
-   - stop-rule-time stops the search once it reaches the set limit
+
+** Revising follow-profile-hr
+
+   - rhythm-profile-BPF-hr depends on the number of variables
+   - If motifs are used, the number of notes can greatly exceed the number of variables, making this rule rather meaningless, because it is unknown how much of the profile is used (if we give a much greater n for the profile than the number of variables)
+
+     Solution: a variant of the existing rule set-end, which disables a rule after a certain number of notes 
+     (set-end is currently only defined for JBS constraints...)
+
+
+** Implement follow-timed-profile-hr
+
+   See [[file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef%20follow-timed-profile-hr][file:~/PWGL-User/User-library/cluster-rules/sources/melody-rules.lisp::(PWGLDef follow-timed-profile-hr]]
+
 
 
 * Other rule ideas
 
-** Crazy rules
+** Discuss with Orjan						    :ARCHIVE:
+
+   Agreed: difficult to fix problem
+
+   profile rules: motifs
+
+   Idea: instead of looking only at the last profile value in the heuristic constrain, always compare that whole partial solution with the profile (up to the current value)
+
+
+
+** Unconventional/algorithmic rules
 
 *** Motifs fitting exactly into one bar (Hans T)
 
@@ -38,6 +66,7 @@
 *** No notes of different voices starting at same time -- onsets never coincide
 
     cluster library, tutorial 009b.polyphonic-rhythm 
+
 
 *** Grace notes
 
@@ -59,23 +88,25 @@
 
     E.g., rhythm/clusterlibrary/<rule>
 
-**** one voice
+**** one voice							    :ARCHIVE:
 
      r-mel-interval-one-voice -> melody
 
      r-metric-hierarchy
 
 
-**** rules two voices
+
+**** rules two voices						    :ARCHIVE:
 
      r-rhythm-hierarchy
      
      r-canon -> counterpoint
 
 
-**** Rules of more than two voices
+**** Rules of more than two voices				    :ARCHIVE:
 
-     r-chords -> harmony
+     OK r-chords -> harmony
+
 
 **** ?? All of Jacopo's PWGL rules?
 
@@ -84,10 +115,17 @@
 
 ** Melodic rules 
 
+*** Max pitch within a window occurs only once
+
 *** Ballistic curve of pitches...
 
 
 ** Rhythm rules 
+
+*** Syncopation
+
+    Syncopated notes shorter than notes before ...
+    ..
 
 *** Restrict rest duration
 
@@ -135,6 +173,20 @@
 
 
 ** Rules inspired by Jacopo
+
+*** !? Morphology rules 
+
+**** Multi-PCM rules
+
+***** Pattern rules
+
+      ptrn-find-rule / not-ptrn-find-rule 
+      
+
+      -> Problem: pattern rules are only checked after solution has certain length
+      
+      Is it possible to check rule partially more early already?
+
     
 *** Harmony
 
@@ -219,11 +271,6 @@
      - Over the whole duration of a harmony
 
      ? Have number of PCs controlled with BPF -- that would only work if underlying harmony allows for that, but could be useful 
-
-
-     
-
-*** Morphology rules 
 
 
 *** Melody							    :ARCHIVE:
