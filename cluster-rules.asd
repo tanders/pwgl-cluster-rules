@@ -13,7 +13,7 @@
 	       (:file "sources/melody-rules")
 	       (:file "sources/harmony-rules")
 	       (:file "sources/counterpoint-rules")
-	       ; (:file "sources/export")
+	       (:file "sources/export")
 	       (:file "sources/menus"))
   :depends-on ("cluster-engine" ; "ta-utilities"
 	       ))
