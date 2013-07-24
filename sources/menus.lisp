@@ -5,7 +5,8 @@
  '(:menu-component
    ("Cluster Rules"
     (; ("generic" ())
-     ("profile" (follow-profile-hr
+     ("profile" (follow-timed-profile-hr
+		 follow-profile-hr
 		 rhythm-profile-BPF-hr 
 		 compose-functions)
 		 ("mappings" (mp-add-offset mp-multiply mp-add-random-offset))
@@ -14,6 +15,7 @@
 				   cluster-engine::r-rhythm-hierarchy))
                 (no-two-consecutive-syncopations no-syncopation only-simple-syncopations only-simple-tuplet-offs
 		 start-with-rest
+		 phrase-length metric-offset-of-motif
 		 ; accent-is-longer-than-predecessor
 		 metric-accents
 		 accents-in-other-voice)
@@ -31,7 +33,9 @@
 		  tintinnabuli-M-voice tintinnabuli-T-voice))
      ("counterpoint" ("Cluster Engine" (cluster-engine::r-canon))
                      (no-voice-crossing no-parallels))
-     ("score" (voice->durations voice->pitches))
+     ("score" (voice->start-times voice->durations voice->pitches
+	       set-staff-clefs
+	       set-staff-instruments))
      ("utilities"  (file-in-this-directory read-lisp-file read-harmony-file 
 		    output-filename))
      ))))
