@@ -439,6 +439,47 @@ Other arguments are inherited from R-rhythms-one-voice
 	    rule-type weight)))
 
 
+;; TODO: if future versions of R-rhythm-rhythm allow, then allow max-factor to be a BPF that can change over time (e.g., that way, some parts of the music can be forced to be strictly homophonic, while others are not) 
+(PWGLDef similar-sim-durations ((voices '(0 1))
+				(max-factor 1)
+				(rest-mode () (ccl::mk-menu-subview :menu-list '(":constrain" ":ignore")))
+				&optional
+				(rule-type  () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+				(weight 1))
+	 "This rule restricts the maximum difference between simultaneous note durations. Together with the rule r-rhythm-hierarchy (from library cluster engine) this rule allows to enforce a homophonic texture and also almost homophonic textures. 
+
+Note that grace notes are ignored by this rule.
+
+Args:
+  voices (a list of ints): The list of voices affected by this constraint. The first given voice is used as a reference: notes of all other voices are compared to this voice.
+  max-factor (a ratio): If max-factor is 1, then the simultaneous durations always have exactly the same duration (however, neither the size of the duration nor whether they start together is constrained). If max-factor is larger (or smaller) than one then this factor defines the largest possible quotient between simultaneous durations. For example, if max-factor is 2 then any note can be at most the double and at least halve of the simultaneous note (note that the rule behaves the same whether max-factor is 1/2 or 2).
+  rest-mode: Whether or not to also constrain rests or not. If rests are constrained, then all simultaneous notes must be notes and simultaneous rests must be rests.
+
+Other args are inherited from R-rhythm-rhythm.
+"
+	 ()
+	 (let ((voice1 (first voices)))
+	   (mapcar #'(lambda (voice2)
+		       (R-rhythm-rhythm #'(lambda (d1_offset_d2)
+					    (destructuring-bind (dur1 offset dur2) d1_offset_d2
+					      (let ((both-notes-or-rests?  
+						     (case rest-mode
+						       (:ignore T)
+						       (:constrain (= (signum dur1) (signum dur2)))))) 
+						(and both-notes-or-rests?
+						     (or (= dur1 dur2)
+							 (and (< dur1 dur2) (<= dur2 (* dur1 max-factor)))
+							 (and (< dur2 dur1) (<= dur1 (* dur2 max-factor))))))))
+					voice1
+					voice2
+					:d1_offs_d2
+					:norm
+					(case rest-mode
+					  (:ignore :at-durations-v1)
+					  (:constrain :at-events-v1))
+					rule-type
+					weight))
+		   (rest voices))))
 
 
 ;;;

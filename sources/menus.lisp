@@ -15,7 +15,8 @@
 				   cluster-engine::r-rhythm-hierarchy))
                 (no-two-consecutive-syncopations no-syncopation only-simple-syncopations only-simple-tuplet-offs
 		 start-with-rest
-		 phrase-length metric-offset-of-motif
+		 metric-offset-of-motif phrase-length
+		 similar-sim-durations
 		 ; accent-is-longer-than-predecessor
 		 metric-accents
 		 accents-in-other-voice)
