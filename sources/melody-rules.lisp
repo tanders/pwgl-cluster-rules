@@ -4,11 +4,15 @@
 ;; follow-timed-profile-hr
 
 ;; TODO:
-;; - Update documentation
-;; - Consider mode pitch-n-rhyth when using a score input
+;; - !! BUG: rhythm not constrained? -- hr-rhythm-pitch-one-voice does not apply heuristic constraints on rhythmic values
+;; - BUG: interpolate-score? has no effect?
+;; - BUG: end time of score BPF is last start time?
+;; - OK? Update documentation
+;; - allow for list of BPFs / voices
 ;; - enable other settings of arg constrain 
 ;; - allow for list of BPFs or scores
 ;; - handle tempo of score -- tempo must be constant and must be set to 60 (or specify constant tempo as arg?) -- Handle by documenting.
+;; - NO Consider mode pitch-n-rhyth when using a score input
 ;; - OK enable score input 
 (PWGLDef follow-timed-profile-hr  
 	 ((voices 0)
@@ -17,8 +21,7 @@
 	  ;; TODO: test whether I can have a menu as input (for predefined transformations) but nevertheless also give it a function as arg -- yes, a "menu arg" can also receive any other value as input
 	  (constrain () (ccl::mk-menu-subview :menu-list '(":profile" ":intervals" ":directions")))
 	  (gracenotes? () (ccl::mk-menu-subview :menu-list '(":normal" ":exclude-gracenotes")))
-	  &key
-	  (start 0) 
+	  &key	  (start 0) 
 	  (end NIL)
 	  (interpolate-score? NIL)
 	  (weight-offset 0)
@@ -26,23 +29,23 @@
 	  ;; (map NIL)
 	  )
 	 "!! Unfinished DEFINITION !!
-Heuristic rule. The pitches or rhythmic values of the resulting music follow the given profile (numbers, a voice, or BPFs).
+Heuristic rule. The pitches or rhythmic values of the resulting music follow the given profile (a BPF or voice), taking the timing of the profile into account. For example, if the BPF time values (x values) range from 0 to 2, then the BPF describes a profile over 2 whole notes starting at the beginning of the score.
 
-Note: If this rule is used with pitch/rhythm motifs, then only the selection of the 1st motif note is controlled by the rule (in future it would be nice to control the average pitch/rhythm of motifs, but that would require different rule applicators).
+Note: If this rule is used with pitch/rhythm motifs, then only the selection of the 1st motif note is controlled by the rule.
 
 Args:
 
 voices (int or list of ints): The voice(s) to which the constraint is applied. 
 
-profile: Specifies the profile, which should be followed. This can be either a voice object (or a score/part), a BPF object, or a list of any of these (if multiple voices should be constrained). In case a score or part object is given, then only the first voice is extracted and used. If voice objects contains chords, then only the first chord note is extracted. In case a BPF is given, then that BPF is sampled (n samples) and the y values are used.
+mode: Select whether to constrain the rhythmic values (rhythm) or the pitches (pitch). If you want to constrain both, then simply use two instances of this rule with different mode settings.
 
-mode: Select whether to constrain either the rhythmic values (rhythm) or the pitches (pitch). If you want to constrain both, then simply use two instances of this rule with different mode settings.
+profile: Specifies the profile, which should be followed. This can be either a voice object (or a score/part), a BPF object, or a list of any of these (if multiple voices should be constrained). In case a score or part object is given, then only the first voice is extracted and used. If voice objects contains chords, then only the first chord note is extracted. 
 
 constrain: Select whether pitch/rhythm should follow the profile directly, or whether pitch/rhythm intervals should follow the intervals between profile, or pitch/rhythm directions should follow the directions of profile intervals.
 
 Key args:
 
-start / end (number): At which time point to start / end applying this rule. A start time greater zero has the effect that the profile is shifted in time to start at the specified time. An end time smaller than the duration of the profile has the effect that the part of the profile behind the set end is cut off.
+start / end (number): At which time point to start / end applying this rule. A start time greater zero has the effect that the profile is shifted in time to start at the specified time. An end time smaller than the duration of the profile has the effect that the part of the profile behind the set end is cut off. If end is NIL (the default) then the full profile duration is used.
 
 interpolate-score? (Boolean): Specifies whether score pitches or durations should be hold for their whole duration in the profile (sample-and-hold format), or whether between these values should be interpolated (zick-zack format).
 
@@ -61,14 +64,14 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 			       (cond ((< x1 x2) 2)
 				     ((= x1 x2) 1)
 				     ((> x1 x2) 0))))
-	   ;; Internal representation is as a BPF. A score is transformed into a BPF. This may not be most efficient (compared with, say, using vectors), but it allows to access values at any time point. 
+	   ;; Internal representation is a BPF. A score is transformed into a BPF. This may not be most efficient (compared with, say, using vectors), but it allows to access values at any time point. 
 	   (let* ((BPF-profile 
 		   ;; process different inputs: list of int, BPF, score... 
 		   (cond ; ((listp profile) profile) ;; TODO: revise for polyphonic case (test for list of numbers)
 		    ((ccl::break-point-function-p profile) profile)
 		    ;; NOTE: profile generated from score interpolates between pitches and durations -- is this OK, or should I better use some sample-and-hold profile?
 		    ((or (ccl::voice-p profile) (ccl::score-p profile) (ccl::part-p profile))
-		     (case interpolate-score?
+		     (case interpolate-score? ;; BUG: interpolate-score? has no effect?
 		       (NIL
 			(let ((starts (voice->start-times profile))
 			      (last-dur (/ (ccl::duration 
@@ -87,7 +90,7 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 				       (case mode
 					 (:pitch (voice->pitches profile))
 					 (:rhythm (voice->durations profile)))))))
-		    (T (error "Neither list nor score nor BPF: ~A" profile))))
+		    (T (error "Neither score nor BPF: ~A" profile))))
 		  (BPF-xs (ccl::x-points BPF-profile))
 		  (BPF-start (first BPF-xs))
 		  (BPF-end (first (last BPF-xs)))
@@ -104,7 +107,7 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 			  #'(lambda (rhythm-time-pitch) 
 			      "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
 			      (destructuring-bind (rhythm time pitch) rhythm-time-pitch
-				(format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
+				;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
 				(if (and (if end
 					     (<= start time end) 
 					   (<= start time))
