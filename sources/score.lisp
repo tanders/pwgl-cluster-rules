@@ -33,10 +33,10 @@ Args:
 rationalize? (Boolean): If the score has a constant tempo of 60, then durations can be output as ratios (i.e., 1/4 means a quarter note), by setting this argument to T."
 	 ()
 	 (let ((starts (voice->start-times voice)))
-	   (mapcar #'(lambda (start dur) 
-		       (if rationalize? 
-			   (rationalize (* (signum start) dur))
-			   (* (signum start) dur)))
+	   (mapcar #'(lambda (start dur)
+		       (let ((dur-or-rest (* (if (zerop start) 1 (signum start)) ; sign of start
+					     dur)))
+			 (if rationalize? (rationalize dur-or-rest) dur-or-rest)))
 		   starts
 		   (pw:x->dx
 		    (append (mapcar #'abs starts)
