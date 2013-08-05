@@ -4,7 +4,6 @@
 ;; follow-timed-profile-hr
 
 ;; TODO:
-;; - !! BUG: rhythm not constrained? -- hr-rhythm-pitch-one-voice does not apply heuristic constraints on rhythmic values
 ;; - BUG: interpolate-score? has no effect?
 ;; - BUG: end time of score BPF is last start time?
 ;; - OK? Update documentation
@@ -14,6 +13,7 @@
 ;; - handle tempo of score -- tempo must be constant and must be set to 60 (or specify constant tempo as arg?) -- Handle by documenting.
 ;; - NO Consider mode pitch-n-rhyth when using a score input
 ;; - OK enable score input 
+;; - OK rhythm not constrained? -- hr-rhythm-pitch-one-voice does not apply heuristic constraints on rhythmic values
 (PWGLDef follow-timed-profile-hr  
 	 ((voices 0)
 	  (mode () (ccl::mk-menu-subview :menu-list '(":pitch" ":rhythm")))
@@ -21,7 +21,8 @@
 	  ;; TODO: test whether I can have a menu as input (for predefined transformations) but nevertheless also give it a function as arg -- yes, a "menu arg" can also receive any other value as input
 	  (constrain () (ccl::mk-menu-subview :menu-list '(":profile" ":intervals" ":directions")))
 	  (gracenotes? () (ccl::mk-menu-subview :menu-list '(":normal" ":exclude-gracenotes")))
-	  &key	  (start 0) 
+	  &key	  
+	  (start 0) 
 	  (end NIL)
 	  (interpolate-score? NIL)
 	  (weight-offset 0)
@@ -100,29 +101,62 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 		  ;; (mapped-profile (if map 
 		  ;; 		      (mapcar map transformed-profile)
 		  ;; 		    transformed-profile))
-		  )	     
-	     ;; process different settings for constrain
-	     (case constrain
-	       (:profile (hr-rhythm-pitch-one-voice
-			  #'(lambda (rhythm-time-pitch) 
-			      "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
-			      (destructuring-bind (rhythm time pitch) rhythm-time-pitch
-				;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
-				(if (and (if end
-					     (<= start time end) 
-					   (<= start time))
-					 (<= BPF-start time BPF-end))
-				    (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time start)))
-					  (curr-var (case mode
-						      (:pitch pitch)
-						      (:rhythm rhythm))))
-				      (+ (- (abs (- curr-var curr-BPF-val)))
-					 weight-offset))
-				  ;; otherwise no preference
-				  0)))
-			  voices
-			  :rhythm/time/pitch
-			  gracenotes?))))))
+		  )	   
+	     (flet ((heuristic-aux (curr-value time)
+				   (if (and (if end
+						(<= start time end) 
+					      (<= start time))
+					    (<= BPF-start time BPF-end))
+				       (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time start))))
+					 (+ (- (abs (- curr-value curr-BPF-val)))
+					    weight-offset))
+				     ;; otherwise no preference
+				     0)))	  
+	       ;; process different settings for constrain
+	       (case constrain
+		 (:profile (case mode
+			     ;; Ideally hr-pitches-one-voice and hr-rhythms-one-voice would be consistent (both allow to access also the start time point of the duration/pitch). but unfortunately this is not the case (currently). Hence I need to use hr-rhythm-pitch-one-voice for constraining the pitches, which makes the code more complex (more code doublication, except I define some additional function for the main functionality of these constraints).
+			     (:pitch 
+			      (hr-rhythm-pitch-one-voice
+			       #'(lambda (rhythm-time-pitch) 
+				   "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
+				   (destructuring-bind (rhythm time pitch) rhythm-time-pitch
+				     ;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
+				     ;; (heuristic-aux pitch time)
+				     (if (and (if end
+						  (<= start time end) 
+						(<= start time))
+					      (<= BPF-start time BPF-end))
+					 (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time start)))
+					       (curr-var (case mode
+							   (:pitch pitch)
+							   (:rhythm rhythm))))
+					   (+ (- (abs (- curr-var curr-BPF-val)))
+					      weight-offset))
+				       ;; otherwise no preference
+				       0)))
+			       voices
+			       :rhythm/time/pitch
+			       gracenotes?))
+			     (:rhythm 
+			      (hr-rhythms-one-voice
+			       #'(lambda (value-time) 
+				   "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
+				   (destructuring-bind (curr-value time) value-time
+				     ;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
+				     ;; (heuristic-aux curr-value time)
+				     (if (and (if end
+						  (<= start time end) 
+						(<= start time))
+					      (<= BPF-start time BPF-end))
+					 (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time start))))
+					   (+ (- (abs (- curr-value curr-BPF-val)))
+					      weight-offset))
+				       ;; otherwise no preference
+				       0)))
+			       voices
+			       :dur/time))))
+		 )))))
 ;; TODO: add cases :intervals and :directions
 				 ;; ;; process different settings for constrain
 				 ;; (case constrain
