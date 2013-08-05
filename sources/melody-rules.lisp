@@ -115,26 +115,13 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 	       ;; process different settings for constrain
 	       (case constrain
 		 (:profile (case mode
-			     ;; Ideally hr-pitches-one-voice and hr-rhythms-one-voice would be consistent (both allow to access also the start time point of the duration/pitch). but unfortunately this is not the case (currently). Hence I need to use hr-rhythm-pitch-one-voice for constraining the pitches, which makes the code more complex (more code doublication, except I define some additional function for the main functionality of these constraints).
 			     (:pitch 
 			      (hr-rhythm-pitch-one-voice
 			       #'(lambda (rhythm-time-pitch) 
 				   "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
 				   (destructuring-bind (rhythm time pitch) rhythm-time-pitch
 				     ;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
-				     ;; (heuristic-aux pitch time)
-				     (if (and (if end
-						  (<= start time end) 
-						(<= start time))
-					      (<= BPF-start time BPF-end))
-					 (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time start)))
-					       (curr-var (case mode
-							   (:pitch pitch)
-							   (:rhythm rhythm))))
-					   (+ (- (abs (- curr-var curr-BPF-val)))
-					      weight-offset))
-				       ;; otherwise no preference
-				       0)))
+				     (heuristic-aux pitch time)))
 			       voices
 			       :rhythm/time/pitch
 			       gracenotes?))
@@ -143,17 +130,7 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 			       #'(lambda (value-time) 
 				   "Defines a heuristic -- larger return profile are preferred. Essentially, returns the abs difference between current value and pitch."
 				   (destructuring-bind (curr-value time) value-time
-				     ;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
-				     ;; (heuristic-aux curr-value time)
-				     (if (and (if end
-						  (<= start time end) 
-						(<= start time))
-					      (<= BPF-start time BPF-end))
-					 (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time start))))
-					   (+ (- (abs (- curr-value curr-BPF-val)))
-					      weight-offset))
-				       ;; otherwise no preference
-				       0)))
+				     (heuristic-aux curr-value time)))
 			       voices
 			       :dur/time))))
 		 )))))
