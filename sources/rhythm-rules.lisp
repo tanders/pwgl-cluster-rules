@@ -451,11 +451,13 @@ Other arguments are inherited from R-rhythms-one-voice
 Note that grace notes are ignored by this rule.
 
 Args:
-  voices (a list of ints): The list of voices affected by this constraint. The first given voice is used as a reference: notes of all other voices are compared to this voice.
+  voices (a list of ints): The list of voices affected by this constraint. The first given voice is used as a reference: notes of all other voices are compared to this voice. NOTE: if the reference voice is not the voice with the lowest number, then the search is slowed down.
   max-factor (a ratio): If max-factor is 1, then the simultaneous durations always have exactly the same duration (however, neither the size of the duration nor whether they start together is constrained). If max-factor is larger (or smaller) than one then this factor defines the largest possible quotient between simultaneous durations. For example, if max-factor is 2 then any note can be at most the double and at least halve of the simultaneous note (note that the rule behaves the same whether max-factor is 1/2 or 2).
   rest-mode: Whether or not to also constrain rests or not. If rests are constrained, then all simultaneous notes must be notes and simultaneous rests must be rests.
 
 Other args are inherited from R-rhythm-rhythm.
+
+BUG: Arg factor seemingly not fully working as documented yet if factor > 1.
 "
 	 ()
 	 (let ((voice1 (first voices)))
