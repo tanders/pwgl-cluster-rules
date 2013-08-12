@@ -91,17 +91,33 @@ Definition inspired Julien Vincenot"
 			       NIL)))
 
 
-(PWGLDef set-staff-instruments 
-	 ((score '()) &rest (instruments 'piano))
-	  ;; (instruments () (ccl::mk-menu-subview :menu-list '(":beats" ":1st-beat")))
+(PWGLDef set-staff-instruments ((score '()) 
+				(instrument 'piano)
+				&rest (instruments 'piano))
+	 ;; (instruments () (ccl::mk-menu-subview :menu-list '(":beats" ":1st-beat")))
 	 "Set the instruments of successive staves."
 	 (:groupings '(1 1))
-	 (system::enp-script score        
-			     (loop for instr in instruments
-				   for index in (pw::arithm-ser 1 1 (length instruments))
-				   collect 
-				   `(* ?1 :partnum (list ,index)
-				       (ccl::?if 
-					(setf (ccl::instrument (ccl::read-key ?1 :part))
-					      (ccl::make-instance ',instr)))))
-			     NIL))
+	 (let ((all-instruments (cons instrument instruments)))
+	   (system::enp-script score        
+			       (loop for instr in all-instruments
+				     for index in (pw::arithm-ser 1 1 (length all-instruments))
+				     collect 
+				     `(* ?1 :partnum (list ,index)
+					 (ccl::?if 
+					  (setf (ccl::instrument (ccl::read-key ?1 :part))
+						(ccl::make-instance ',instr)))))
+			       NIL)))
+
+
+(PWGLDef set-staff-channels ((score '()) (channel 0) &rest (channels 0))
+	 "Set the MIDI channels of successive staves."
+	 (:groupings '(1 1))
+	 (let ((all-chans (cons channel channels)))
+	   (system::enp-script score        
+			       (loop for channel in all-chans
+				     for index in (pw::arithm-ser 1 1 (length all-chans))
+				     collect 
+				     `(* ?1  :partnum (list ,index)
+					 (?if (setf (ccl::chan ?1) ,channel))))
+			       NIL)))
+
