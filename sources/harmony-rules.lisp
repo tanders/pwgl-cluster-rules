@@ -189,6 +189,7 @@ NOTE: an index variant for a pitch-pitch constraint (which could access the sim 
 	 "Every tone (PC) that is not a chord tone (member of sim chord PCs, in voice 1 by default) is reached/left by a step of the given step size.
 
 Args: 
+step-size (int): maximum interval considered a step.
 voices (int or list of ints): the voice(s) to which this constraint is applied.
 
 Optional args:
