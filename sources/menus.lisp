@@ -11,7 +11,8 @@
 		 compose-functions)
 		 ("mappings" (mp-add-offset mp-multiply mp-add-random-offset))
 		 ("transformations" (trfm-scale trfm-add-BPF trfm-multiply-BPF trfm-reverse)))
-     ("rhythm"  ("Cluster Engine" (cluster-engine::r-metric-hierarchy
+     ("rhythm"  ("Cluster Engine" (cluster-engine::r-predefine-meter
+				   cluster-engine::r-metric-hierarchy
 				   cluster-engine::r-rhythm-hierarchy))
                 (no-two-consecutive-syncopations no-syncopation only-simple-syncopations only-simple-tuplet-offs
 		 start-with-rest
@@ -36,8 +37,10 @@
                      (no-voice-crossing no-parallels))
      ("score" (voice->start-times voice->durations voice->pitches
 	       set-staff-clefs
-	       set-staff-instruments))
-     ("utilities"  (file-in-this-directory read-lisp-file read-harmony-file 
+	       set-staff-instruments
+	       set-staff-channels))
+     ("utilities"  (scale->pitchdomain
+		    file-in-this-directory read-lisp-file read-harmony-file 
 		    output-filename))
      ))))
 
