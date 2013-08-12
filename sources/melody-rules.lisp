@@ -4,7 +4,10 @@
 ;; follow-timed-profile-hr
 
 ;; TODO:
-;; - Support rests: arg with two different options -- either rest only preferred if BPF is negative, or rest can happen at any position of a BPF value (distance between absolutes)
+;; - BUG: In pitch mode, rests (NIL) not (fully) treated -- resulting in errors like 
+;;    An error occured: In - of (67 NIL) arguments should be of type NUMBER.
+;;   See tests/melody/follow-timed-profile-hr-rests.pwgl
+;; - !! Support rests: arg with two different options -- either rest only preferred if BPF is negative, or rest can happen at any position of a BPF value (distance between absolutes)
 ;; - BUG: end time of score BPF is last start time?
 ;; - NO Consider mode pitch-n-rhyth when using a score input
 ;; - OK enable score input 
@@ -105,7 +108,8 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 			       )	   
 			  (flet ((profile-hr (curr-var time)
 					     "Defines core of profile heuristic Essentially, returns the abs difference between current pitch/rhythm and the profile value at time."
-					     (if (and (if end
+					     (if (and (not (null curr-var)) ; pitch is not a rest
+						      (if end
 							  (<= start time end) 
 							(<= start time))
 						      (<= BPF-start time BPF-end))
@@ -116,7 +120,9 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 					       0))
 				 (interval/direction-hr (var1 time1 var2 time2)
 							"Defines core of profile heuristic Essentially, returns the abs difference between current pitch/rhythm and the profile value at time."
-							(if (and (if end
+							(if (and (not (null var1)) ; pitch is not a rest
+								 (not (null var2))
+								 (if end
 								     (and (<= start time1)
 									  (<= time2 end))
 								   (<= start time1))
