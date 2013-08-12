@@ -39,11 +39,11 @@ Note: If this rule is used with pitch/rhythm motifs, then only the selection of 
 
 Args:
 
-voices (int or list of ints): The voice(s) to which the constraint is applied. If multiple profiles are given, then a voice for each profile should be specified.
+voices (int or list of ints): The voice(s) to which the constraint is applied. If multiple profiles are given, then a different voice for each profile should be specified.
 
 mode: Select whether to constrain the rhythmic values (rhythm) or the pitches (pitch). If you want to constrain both, then simply use two instances of this rule with different mode settings.
 
-profile: Specifies the profile, which should be followed. This can be either a voice object (or a score/part), a BPF object or a list of any of those. In case a score or part object is given, then only the first voice is extracted and used. If voice objects contains chords, then only the first chord note is extracted. If a list of profiles is specified then these should be intended for different voices.
+profile: Specifies the profile, which should be followed. This can be either a voice object (or a score/part), a BPF object or a list of any of those. In case a score or part object is given, then only the first voice is extracted and used. If voice objects contains chords, then only the first chord note is extracted. If a list of profiles is specified then these are used for the given different voices.
 
 constrain: Select whether pitch/rhythm should follow the profile directly, or whether pitch/rhythm intervals should follow the intervals between profile, or pitch/rhythm directions should follow the directions of profile intervals.
 
@@ -51,7 +51,8 @@ interpolate-score? (only relevant if profile is a score/part/voice): Specifies w
 
 Key args:
 
-start / end (number): At which time point to start / end applying this rule. A start time greater zero has the effect that the profile is shifted in time to start at the specified time. An end time smaller than the duration of the profile has the effect that the part of the profile behind the set end is cut off. If end is NIL (the default) then the full profile duration is used.
+start / end (number or list of numbers): At which time point to start / end applying this rule. A start time greater zero has the effect that the profile is shifted in time to start at the specified time. An end time smaller than the duration of the profile has the effect that the part of the profile behind the set end is cut off. If end is NIL (the default) then the full profile duration is used.
+start and end can both also be a list of start/end values to specify different values for different voices.
 
 weight-offset (int): offset to the heuristic weight of this rule (the higher the offset, the more important this rule becomes compared with other heuristic rules).
 
@@ -67,127 +68,131 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 			       (cond ((< x1 x2) 2)
 				     ((= x1 x2) 1)
 				     ((> x1 x2) 0))))
-	   (mappend #'(lambda (my-profile my-voice)
-			;; (format T "follow-timed-profile-hr: my-profile: ~A, voice: ~A~%" my-profile voice)
-			;; Internal representation is a BPF. A score is transformed into a BPF. This may not be most efficient (compared with, say, using vectors), but it allows to access values at any time point. 
-			(let* ((BPF-profile 
-				;; process different inputs: list of int, BPF, score... 
-				(cond ; ((listp profile) profile) ;; TODO: revise for polyphonic case (test for list of numbers)
-				 ((ccl::break-point-function-p my-profile) my-profile)
-				 ;; NOTE: profile generated from score interpolates between pitches and durations -- is this OK, or should I better use some sample-and-hold profile?
-				 ((or (ccl::voice-p my-profile) (ccl::score-p my-profile) (ccl::part-p my-profile))
-				  (case interpolate-score? 
-				    (:no
-				     (let ((starts (voice->start-times my-profile))
-					   (last-dur (/ (ccl::duration 
-							 (first (last (ccl::collect-enp-objects my-profile :chord)))) 4))
-					   (values (case mode
-						     (:pitch (voice->pitches my-profile))
-						     (:rhythm (voice->durations my-profile)))))
-				       (ccl::mk-bpf (append (cons (first starts) 
-								  (mappend #'(lambda (x) (list x x))
-									   (rest starts)))
-							    (list (+ (first (last starts)) last-dur))) 
-						    (append  (list (first values) (first values))
-							     (mappend #'(lambda (x) (list x x))
-								      (rest values))))))
-				    (:yes (ccl::mk-bpf (voice->start-times my-profile)
-						       (case mode
-							 (:pitch (voice->pitches my-profile))
-							 (:rhythm (voice->durations my-profile)))))))
-				 (T (error "Neither score nor BPF: ~A" my-profile))))
-			       (BPF-xs (ccl::x-points BPF-profile))
-			       (BPF-start (first BPF-xs))
-			       (BPF-end (first (last BPF-xs)))
-			       ;; (transformed-profile (if transform 
-			       ;; 			   (funcall transform plain-profile)
-			       ;; 			 plain-profile))
-			       ;; (mapped-profile (if map 
-			       ;; 		      (mapcar map transformed-profile)
-			       ;; 		    transformed-profile))
-			       )	   
-			  (flet ((profile-hr (curr-var time)
-					     "Defines core of profile heuristic Essentially, returns the abs difference between current pitch/rhythm and the profile value at time."
-					     (if (and (not (null curr-var)) ; pitch is not a rest
-						      (if end
-							  (<= start time end) 
-							(<= start time))
-						      (<= BPF-start time BPF-end))
-						 (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time start))))
-						   (+ (- (abs (- curr-var curr-BPF-val)))
-						      weight-offset))
-					       ;; otherwise no preference
-					       0))
-				 (interval/direction-hr (var1 time1 var2 time2)
-							"Defines core of profile heuristic Essentially, returns the abs difference between current pitch/rhythm and the profile value at time."
-							(if (and (not (null var1)) ; pitch is not a rest
-								 (not (null var2))
-								 (if end
-								     (and (<= start time1)
-									  (<= time2 end))
-								   (<= start time1))
-								 (and (<= BPF-start time1)
-								      (<= time2 BPF-end)))
-							    (let ((BPF-val1 (ccl::bpf-out BPF-profile (- time1 start)))
-								  (BPF-val2 (ccl::bpf-out BPF-profile (- time2 start))))
-							      (+ (- (abs 
-								     (case constrain
-								       ;; distance between distances of last two vals
-								       ;; TODO: unfinished for rhythm -- how to compute distance of distances?
-								       (:intervals (case mode
-										     (:pitch (- (- var1 var2)
-												(- BPF-val1 BPF-val2)))
-										     ;; for rhythm distance is quotient not difference
-										     (:rhythm (- (/ var1 var2)
-												 (/ BPF-val1 BPF-val2)))))
-								       ;; distance between directions of last two vals
-								       ;; TODO: for rhythm def direction as whether distances are smaller or larger than 1 not 0
-								       (:directions (- (direction-int var1 var2)
-										       (direction-int BPF-val1 BPF-val2))))
-								     ))
-								 weight-offset))
-							  ;; otherwise no preference
-							  0)))
-			    ;; process different settings for constrain
-			    (case constrain
-			      (:profile (case mode
-					  (:pitch 
-					   (hr-rhythm-pitch-one-voice
-					    #'(lambda (rhythm-time-pitch) 
-						(destructuring-bind (rhythm time pitch) rhythm-time-pitch
-						  ;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
-						  (profile-hr pitch time)))
-					    my-voice
-					    :rhythm/time/pitch
-					    gracenotes?))
-					  (:rhythm 
-					   (hr-rhythms-one-voice
-					    #'(lambda (value-time) 
-						(destructuring-bind (curr-value time) value-time
-						  (profile-hr curr-value time)))
-					    my-voice
-					    :dur/time))))
-			      ((:intervals :directions) (case mode
-							  (:pitch 
-							   (hr-rhythm-pitch-one-voice
-							    #'(lambda (rhythm-time-pitch1 rhythm-time-pitch2) 
-								(destructuring-bind ((rhythm1 time1 pitch1) (rhythm2 time2 pitch2))
-								    (list rhythm-time-pitch1 rhythm-time-pitch2)
-								  (interval/direction-hr pitch1 time1 pitch2 time2)))
-							    my-voice
-							    :rhythm/time/pitch
-							    gracenotes?))
-							  (:rhythm 
-							   (hr-rhythms-one-voice
-							    #'(lambda (value-time1 value-time2) 
-								(destructuring-bind ((var1 time1) (var2 time2))
-								    (list value-time1 value-time2)
-								  (interval/direction-hr var1 time1 var2 time2)))
-							    my-voice
-							    :dur/time))))
-			      ))))
-		    (if (listp profile) profile (list profile))
-		    (if (listp voices) voices (list voices)))))
+	   (let* ((my-voices (if (listp voices) voices (list voices)))
+		  (voices-length (length my-voices)))
+	     (mappend #'(lambda (my-profile my-voice my-start my-end)
+			  ;; (format T "follow-timed-profile-hr: my-profile: ~A, voice: ~A~%" my-profile voice)
+			  ;; Internal representation is a BPF. A score is transformed into a BPF. This may not be most efficient (compared with, say, using vectors), but it allows to access values at any time point. 
+			  (let* ((BPF-profile 
+				  ;; process different inputs: list of int, BPF, score... 
+				  (cond ; ((listp profile) profile) ;; TODO: revise for polyphonic case (test for list of numbers)
+				   ((ccl::break-point-function-p my-profile) my-profile)
+				   ;; NOTE: profile generated from score interpolates between pitches and durations -- is this OK, or should I better use some sample-and-hold profile?
+				   ((or (ccl::voice-p my-profile) (ccl::score-p my-profile) (ccl::part-p my-profile))
+				    (case interpolate-score? 
+				      (:no
+				       (let ((starts (voice->start-times my-profile))
+					     (last-dur (/ (ccl::duration 
+							   (first (last (ccl::collect-enp-objects my-profile :chord)))) 4))
+					     (values (case mode
+						       (:pitch (voice->pitches my-profile))
+						       (:rhythm (voice->durations my-profile)))))
+					 (ccl::mk-bpf (append (cons (first starts) 
+								    (mappend #'(lambda (x) (list x x))
+									     (rest starts)))
+							      (list (+ (first (last starts)) last-dur))) 
+						      (append  (list (first values) (first values))
+							       (mappend #'(lambda (x) (list x x))
+									(rest values))))))
+				      (:yes (ccl::mk-bpf (voice->start-times my-profile)
+							 (case mode
+							   (:pitch (voice->pitches my-profile))
+							   (:rhythm (voice->durations my-profile)))))))
+				   (T (error "Neither score nor BPF: ~A" my-profile))))
+				 (BPF-xs (ccl::x-points BPF-profile))
+				 (BPF-start (first BPF-xs))
+				 (BPF-end (first (last BPF-xs)))
+				 ;; (transformed-profile (if transform 
+				 ;; 			   (funcall transform plain-profile)
+				 ;; 			 plain-profile))
+				 ;; (mapped-profile (if map 
+				 ;; 		      (mapcar map transformed-profile)
+				 ;; 		    transformed-profile))
+				 )	   
+			    (flet ((profile-hr (curr-var time)
+					       "Defines core of profile heuristic Essentially, returns the abs difference between current pitch/rhythm and the profile value at time."
+					       (if (and (not (null curr-var)) ; pitch is not a rest
+							(if my-end
+							    (<= my-start time my-end) 
+							  (<= my-start time))
+							(<= BPF-start time BPF-end))
+						   (let ((curr-BPF-val (ccl::bpf-out BPF-profile (- time my-start))))
+						     (+ (- (abs (- curr-var curr-BPF-val)))
+							weight-offset))
+						 ;; otherwise no preference
+						 0))
+				   (interval/direction-hr (var1 time1 var2 time2)
+							  "Defines core of profile heuristic Essentially, returns the abs difference between current pitch/rhythm and the profile value at time."
+							  (if (and (not (null var1)) ; pitch is not a rest
+								   (not (null var2))
+								   (if my-end
+								       (and (<= my-start time1)
+									    (<= time2 my-end))
+								     (<= my-start time1))
+								   (and (<= BPF-start time1)
+									(<= time2 BPF-end)))
+							      (let ((BPF-val1 (ccl::bpf-out BPF-profile (- time1 my-start)))
+								    (BPF-val2 (ccl::bpf-out BPF-profile (- time2 my-start))))
+								(+ (- (abs 
+								       (case constrain
+									 ;; distance between distances of last two vals
+									 ;; TODO: unfinished for rhythm -- how to compute distance of distances?
+									 (:intervals (case mode
+										       (:pitch (- (- var1 var2)
+												  (- BPF-val1 BPF-val2)))
+										       ;; for rhythm distance is quotient not difference
+										       (:rhythm (- (/ var1 var2)
+												   (/ BPF-val1 BPF-val2)))))
+									 ;; distance between directions of last two vals
+									 ;; TODO: for rhythm def direction as whether distances are smaller or larger than 1 not 0
+									 (:directions (- (direction-int var1 var2)
+											 (direction-int BPF-val1 BPF-val2))))
+								       ))
+								   weight-offset))
+							    ;; otherwise no preference
+							    0)))
+			      ;; process different settings for constrain
+			      (case constrain
+				(:profile (case mode
+					    (:pitch 
+					     (hr-rhythm-pitch-one-voice
+					      #'(lambda (rhythm-time-pitch) 
+						  (destructuring-bind (rhythm time pitch) rhythm-time-pitch
+						    ;; (format T "follow-timed-profile-hr: rhythm: ~A, time: ~A, pitch: ~A~%" rhythm time pitch)
+						    (profile-hr pitch time)))
+					      my-voice
+					      :rhythm/time/pitch
+					      gracenotes?))
+					    (:rhythm 
+					     (hr-rhythms-one-voice
+					      #'(lambda (value-time) 
+						  (destructuring-bind (curr-value time) value-time
+						    (profile-hr curr-value time)))
+					      my-voice
+					      :dur/time))))
+				((:intervals :directions) (case mode
+							    (:pitch 
+							     (hr-rhythm-pitch-one-voice
+							      #'(lambda (rhythm-time-pitch1 rhythm-time-pitch2) 
+								  (destructuring-bind ((rhythm1 time1 pitch1) (rhythm2 time2 pitch2))
+								      (list rhythm-time-pitch1 rhythm-time-pitch2)
+								    (interval/direction-hr pitch1 time1 pitch2 time2)))
+							      my-voice
+							      :rhythm/time/pitch
+							      gracenotes?))
+							    (:rhythm 
+							     (hr-rhythms-one-voice
+							      #'(lambda (value-time1 value-time2) 
+								  (destructuring-bind ((var1 time1) (var2 time2))
+								      (list value-time1 value-time2)
+								    (interval/direction-hr var1 time1 var2 time2)))
+							      my-voice
+							      :dur/time))))
+				))))
+		      (if (listp profile) profile (make-list voices-length :initial-element profile))
+		      my-voices
+		      (if (listp start) start (make-list voices-length :initial-element start))
+		      (if (and (listp end) (not (null end))) end (make-list voices-length :initial-element end))))))
 
 
 
