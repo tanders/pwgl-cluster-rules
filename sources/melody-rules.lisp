@@ -81,7 +81,7 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 				   ((or (ccl::voice-p my-profile) (ccl::score-p my-profile) (ccl::part-p my-profile))
 				    (case interpolate-score? 
 				      (:no
-				       (let ((starts (voice->start-times my-profile))
+				       (let ((starts (pw::g-abs (rule:voice->start-times my-profile)))
 					     (last-dur (/ (ccl::duration 
 							   (first (last (ccl::collect-enp-objects my-profile :chord)))) 4))
 					     (values (case mode
@@ -94,7 +94,7 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 						      (append  (list (first values) (first values))
 							       (mappend #'(lambda (x) (list x x))
 									(rest values))))))
-				      (:yes (ccl::mk-bpf (voice->start-times my-profile)
+				      (:yes (ccl::mk-bpf (pw::g-abs (rule:voice->start-times my-profile))
 							 (case mode
 							   (:pitch (voice->pitches my-profile))
 							   (:rhythm (voice->durations my-profile)))))))
