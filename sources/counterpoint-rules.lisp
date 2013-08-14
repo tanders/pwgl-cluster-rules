@@ -14,18 +14,18 @@
 Arguments are inherited from r-pitch-pitch."
 	 () 
 	 (let ((sorted-voices (sort voices #'<)))
-	   (mapcar #'(lambda (voice1 voice2)
-		       (r-pitch-pitch #'(lambda (pitches)
-					  ;; no rests -- no NILs
-					  (apply #'>= (remove NIL pitches))) 
-				      (list voice1 voice2)
-				      '(0)
-				      input-mode
-				      gracenotes?
-				      :pitch
-				      rule-type weight))
-		   (butlast sorted-voices)
-		   (rest sorted-voices))))
+	   (mappend #'(lambda (voice1 voice2)
+			(r-pitch-pitch #'(lambda (pitches)
+					   ;; no rests -- no NILs
+					   (apply #'>= (remove NIL pitches))) 
+				       (list voice1 voice2)
+				       '(0)
+				       input-mode
+				       gracenotes?
+				       :pitch
+				       rule-type weight))
+		    (butlast sorted-voices)
+		    (rest sorted-voices))))
 
 
 ;; no-parallels
