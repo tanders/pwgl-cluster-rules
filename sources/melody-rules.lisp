@@ -84,19 +84,21 @@ Other arguments are inherited by hr-rhythm-pitch-one-voice.
 				       (let ((starts (pw::g-abs (rule:voice->start-times my-profile)))
 					     (last-dur (/ (ccl::duration 
 							   (first (last (ccl::collect-enp-objects my-profile :chord)))) 4))
-					     (values (case mode
-						       (:pitch (voice->pitches my-profile))
+					     (vals (case mode
+						       (:pitch (mapcar #'(lambda (x) (if (null x) 0 x)) 
+								       (voice->pitches my-profile)))
 						       (:rhythm (voice->durations my-profile)))))
 					 (ccl::mk-bpf (append (cons (first starts) 
 								    (mappend #'(lambda (x) (list x x))
 									     (rest starts)))
 							      (list (+ (first (last starts)) last-dur))) 
-						      (append  (list (first values) (first values))
+						      (append  (list (first vals) (first vals))
 							       (mappend #'(lambda (x) (list x x))
-									(rest values))))))
+									(rest vals))))))
 				      (:yes (ccl::mk-bpf (pw::g-abs (rule:voice->start-times my-profile))
 							 (case mode
-							   (:pitch (voice->pitches my-profile))
+							   (:pitch (mapcar #'(lambda (x) (if (null x) 0 x)) 
+									   (voice->pitches my-profile)))
 							   (:rhythm (voice->durations my-profile)))))))
 				   (T (error "Neither score nor BPF: ~A" my-profile))))
 				 (BPF-xs (ccl::x-points BPF-profile))
