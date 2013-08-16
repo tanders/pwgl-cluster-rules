@@ -104,6 +104,20 @@ pc-transposition: integer added to all chord/scale pitch classes. Useful for dis
 ;; Def by Mikael Laurson, 18 May 2013 at pwgl-users@siba.fi
 ;;
 
+;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; -*-
+
+;;; *************************************************************
+;;; Copyright (C) 2013 Torsten Anders (torsten.anders@beds.ac.uk) 
+;;; This program is free software; you can redistribute it and/or
+;;; modify it under the terms of the GNU General Public License
+;;; as published by the Free Software Foundation; either version 3
+;;; of the License, or (at your option) any later version.
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;; *************************************************************
+
 (defclass my-multiout-box (PWGL-box) ())
 
 (defmethod patch-value ((self my-multiout-box) output)
