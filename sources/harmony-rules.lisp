@@ -339,7 +339,7 @@ Other arguments are inherited from r-pitch-pitch."
 	 ((voices '(0 1))
 	  (intervals NIL)
 	  (pcs? () (ccl::mk-menu-subview :menu-list '(":pitches" ":pcs")))
-	  (exclude/only () (ccl::mk-menu-subview :menu-list '(":exclude-given" ":only-given")))
+	  (exclude/only () (ccl::mk-menu-subview :menu-list '(":only-given" ":exclude-given")))
 	  (combinations () (ccl::mk-menu-subview :menu-list '(":over-bass" ":consecutive-voices" ":all-combinations")))
 	  (input-mode () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
 	  (gracenotes? () (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
