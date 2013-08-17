@@ -87,8 +87,8 @@ NOTE: This rule can apply different BPFs to different voices with different sett
 	 (:groupings '(3 2))
 	 (let ((l (length (if (listp BPFs) BPFs (list BPFs)))))
 	   (mappend #'(lambda (BPF voice min-scaling max-scaling rnd-deviation permutate)
-			;; (format T "rhythm-profile-BPF-hr: args: ~A ~%" 
-			;; 	(list BPF voice min-scaling max-scaling rnd-deviation permutate))
+			(format T "rhythm-profile-BPF-hr 1: args: ~A ~%" 
+				(list BPF voice min-scaling max-scaling rnd-deviation permutate))
 			(let* ((BPF-xs (pw::g-scaling (pw::g-power (pw::g-scaling (ccl::pwgl-sample BPF n) 
 										  0 1) 
 								   3)
@@ -108,7 +108,7 @@ NOTE: This rule can apply different BPFs to different voices with different sett
 									     BPF-rnd-xs)))) 
 							       100)))		       
 						voice
-						:list-with-all-durations)))
+						:all-durations)))
 		    (if (listp BPFs) BPFs (list BPFs))
 		    ;; if only a single voice but multiple BPFs are given, 
 		    ;; then only the given voice is constrained with the 1st BPF
@@ -305,7 +305,7 @@ Intended for r-note-meter with format d_offs on beats."
 ;; 	 (hr-rhythms-one-voice #'(lambda (rhythm)
 ;; 				   ())
 ;; 			       voices
-;; 			       :list-with-all-durations))
+;; 			       :all-durations))
 
 
 ;; start-with-rest
