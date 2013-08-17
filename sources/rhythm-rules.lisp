@@ -360,9 +360,9 @@ Other arguments are inherited from R-meter-note.
 	 (r-meter-note #'(lambda (offs_motif)
 			   (let ((offs (first offs_motif))
 				 (motif (second offs_motif)))
-			     (if (and (> (first motif) 0) ; motif starting with note?
-				      (and (not NIL)
-					   (>= (length motif) min-motif-length)))
+			     (if (and (>= (first motif) 0) ; motif starting with note?
+				      (or (not min-motif-length) ; min-motif-length not set
+					  (>= (length motif) min-motif-length)))
 				 (or ;; is motif on set position?
 				  (= (- offs metric-offset) 0)
 				  ;; if checked per beat, motif is potentially longer than a single beat
