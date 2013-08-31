@@ -477,16 +477,21 @@ BUG: Arg factor seemingly not fully working as documented yet if factor > 1.
 	 ()
 	 (let ((voice1 (first voices)))
 	   (mapcar #'(lambda (voice2)
+		       (format T "similar-sim-durations 1: voice1: ~A, voice2: ~A~%" voice1 voice2)
 		       (R-rhythm-rhythm #'(lambda (d1_offset_d2)
 					    (destructuring-bind (dur1 offset dur2) d1_offset_d2
 					      (let ((both-notes-or-rests?  
 						     (case rest-mode
 						       (:ignore T)
 						       (:constrain (= (signum dur1) (signum dur2)))))) 
-						(and both-notes-or-rests?
-						     (or (= dur1 dur2)
-							 (and (< dur1 dur2) (<= dur2 (* dur1 max-factor)))
-							 (and (< dur2 dur1) (<= dur1 (* dur2 max-factor))))))))
+						(if both-notes-or-rests?
+						    ;; (cond ((= dur1 dur2) T)
+						    ;; 	  ((< dur1 dur2) (<= dur2 (* dur1 max-factor)))
+						    ;; 	  ((< dur2 dur1) (<= dur1 (* dur2 max-factor))))
+						    (or (= dur1 dur2)
+						    	(and (< dur1 dur2) (<= dur2 (* dur1 max-factor)))
+						    	(and (< dur2 dur1) (<= dur1 (* dur2 max-factor))))
+						  T))))
 					voice1
 					voice2
 					:d1_offs_d2
