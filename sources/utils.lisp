@@ -150,19 +150,49 @@ pc-transposition: integer added to all chord/scale pitch classes. Useful for dis
 ;;;
 
 (defparameter rule::*score-counter* 0 "Incrementing counter for output filename")
-
-(PWGLDef output-filename ((filename "test")
+(PWGLDef output-filename ((filename NIL)
 			  &optional
 			  (sub-directory NIL)
-			  (extension ".xml"))
-	 "Generate a path in the directory of the patch with the given filename and optional extension. A subdirectory within the directory of the patch can also optionally be specified. All arguments expect strings."
+			  (extension ".xml")
+			  (increment? NIL))
+	 "Generate a path in the directory of the patch (!) with the given filename and optional extension.
+
+NOTE: This box can only be evaluated from within the top-level patch (although the actual box can be contained in an abstraction), because otherwise the path of the patch is not known.
+
+Optional args: 
+  sub-directory (string): a directory before the actual file name (which can also contain directories itself).
+  extension (string or list of strings): A string specifying a file extension. If extension is a list of strings, then a list of pathes is returned.
+  increment? (Boolean): whether or not a numeric increment should be added automatically at the end of the resulting filename."
 	 ()
 	 (progn
-	   (setf rule::*score-counter* (1+ rule::*score-counter*))
-	   (file-in-this-directory
-	    (concatenate 'string sub-directory "/" filename "-" 
-			 (write-to-string rule::*score-counter*) extension))))
+	   (when increment? (setf rule::*score-counter* (1+ rule::*score-counter*)))
+	   (let ((filenames 
+		  (mapcar #'(lambda (ext) 
+			      (file-in-this-directory
+			       (concatenate 'string sub-directory "/" filename 
+					    (if increment?
+						(concatenate 'string "-" (write-to-string rule::*score-counter*))
+					      "")
+					    ext)))
+			  (if (listp extension) extension (list extension)))))
+	     (if (listp extension) filenames (first filenames)))))
 
+
+(defvar *enp-path* (user-homedir-pathname))
+(PWGLDef export-enp ((score NIL)
+		     &optional
+		     (path (capi:prompt-for-file
+			    "Export ENP to:"
+			    :pathname *enp-path*
+			    :filters '("enp" "*.enp") :operation :save)))
+	 "Exports an ENP score notation file of the given score.
+
+Optional arguments:
+  path (defaults to OS saving window): the path where to save the resulting file."
+	 ()
+	 (when path (setq *enp-path* path))
+	 (with-open-file (s path :direction :output :if-exists :supersede)
+			 (format s "~:@W" (ccl::collect-score-info score :score-notation))))
 
 
 ;;;

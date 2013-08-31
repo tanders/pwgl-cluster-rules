@@ -55,6 +55,7 @@
 	       set-staff-channels))
      ("utilities"  (scale->pitchdomain
 		    file-in-this-directory read-lisp-file read-harmony-file 
-		    output-filename))
+		    output-filename
+		    export-enp))
      ))))
 
