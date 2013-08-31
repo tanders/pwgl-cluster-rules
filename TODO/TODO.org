@@ -134,9 +134,9 @@
     - Restrict accumulated rest duration within a certain time window
 
 
-** Heuristic rule -- prefer scale (or chord) roots
+** !! Heuristic rule -- prefer scale (or chord) roots
    
-   Slight preference for the scale (chord?) PC -- amount of preference controllable with an argument]
+   (Slight) preference for the scale (chord?) PC -- amount of preference controllable with an argument
 
 
 ** Strasheela rules 
