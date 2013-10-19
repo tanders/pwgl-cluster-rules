@@ -36,7 +36,7 @@
 		 metric-accents
 		 accents-in-other-voice)
                  ("accent rules" (mk-accent-has-at-least-duration-ar
-				  mk-longer-than-predecessor-OR-has-at-least-duration-ar)))
+				  mk-accent->-prep-OR->=-dur-ar)))
      ("melody"  ("Cluster Engine" (cluster-engine::r-mel-interval-one-voice))
                 (min/max-interval set-pitches set-intervals accumulative-interval
 		 no-direct-repetition no-repetition 
