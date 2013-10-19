@@ -682,6 +682,13 @@ Other arguments are inherited from r-rhythm-rhythm.
 		T))
 	  T))))
 
+(PWGLDef mk-longer-than-predecessor-OR-has-at-least-duration-ar ((min-duration 1/4))
+  "Returns an accent rule for metric-accents or accents-in-other-voice. Accented notes are EITHER longer than the preceeding note and at least as long as the succeeding note OR at least min-duration long."
+  ()
+  #'(lambda (d_offs1 d_offs2 d_offs3)
+      (or (accent-longer-than-predecessor-ar d_offs1 d_offs2 d_offs3)
+	  (funcall (mk-accent-has-at-least-duration-ar min-duration) d_offs2))))
+
 
 ;; Unused -- just test for possible future development, depending on development of the Cluster Engine itself
 ;; BUG: test case that does not work -- see comment at accent-strictness 
