@@ -637,11 +637,10 @@ Other arguments are inherited from r-rhythm-rhythm.
 ;;; Accent model: predefined accent rules
 ;;;
 
-;; !! TODO: later allow for actual accent constraints to be given as args with fun expecting funs and returning a fun
 ;; TODO: 
-;; - refine model: all notes beyond a certain duration are also accented -- define this with extra rule..
 ;; - how can I take rests into account?
 ;; - rule only applied when there are actually three notes in succession, i.e., not to 1st two notes. In Strasheela, rule is applied in such a way that values of 1st two "args" of coresponding function can be nil
+;; - OK refine model: all notes beyond a certain duration are also accented -- define this with extra rule..
 ;;
 ;; NOTE: constraint applied to d_offs2, but only checked after d_offs3 is bound
 (defun accent-longer-than-predecessor-ar  (d_offs1 d_offs2 d_offs3)
