@@ -567,9 +567,7 @@ What I could easily do is apply multiple accent rules independently. However, I 
 	  &optional
 	  (rule-type  () :rule-type-mbox)
 	  (weight 1))
-	 "Restricts where metric accents occur depending on the underlying meter. 
-
-If an accent occurs, then it is on the position defined. 
+	 "Restricts where metric accents occur depending on the underlying meter. If an accent occurs, then it is on the position defined. 
 
 Args:
   metric-structure: position where accents are controlled (on any beat or the first beat of a measure).
@@ -585,6 +583,7 @@ Args:
 Other arguments are inherited from r-note-meter.
 " 
 	 ()
+	 ;; r-note-meter constraints all events of the given voice(s)
 	 (r-note-meter (case accent-rule
 			 (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
 			 (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
@@ -605,9 +604,7 @@ Other arguments are inherited from r-note-meter.
 	  (accents-voice 3)
 	  (rule-type  () :rule-type-mbox)
 	  (weight 1))
-	 "Restricts where metric accents occur depending on the note onsets defined in an 'accents voice'.
-
-If an accent occurs, then it is on the position defined. 
+	 "Restricts where metric accents occur depending on the note onsets defined in an 'accents voice'. If an accent occurs, then it is on the position defined. 
 
 Args:
   voices (int or list of ints): the numbers of voice(s) to constrain.
@@ -623,6 +620,7 @@ Other arguments are inherited from r-rhythm-rhythm.
 " 
 	 ()
 	 (mapcar #'(lambda (voice)
+		     ;; r-note-meter constraints all events of voice
 		     (r-rhythm-rhythm (case accent-rule
 					(:longer-than-predecessor #'accent-longer-than-predecessor-ar)
 					(:longer-than-neighbours #'accent-longer-than-neighbours-ar)
