@@ -504,9 +504,11 @@ BUG: Arg factor seemingly not fully working as documented yet if factor > 1.
 		   (rest voices))))
 
 
-;;;
-;;; Accent Model 
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;
+;;;;; Accent Model 
+;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; Accent model: top-level definitions
@@ -593,14 +595,14 @@ Other arguments are inherited from r-note-meter.
 
 
 (PWGLDef accents-in-other-voice
-	 ((voices 0)
+	 ((voices 1)
+	  (accents-voice 0)
 	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
 							     ":longer-than-neighbours")))
 	  (strictness () (ccl::mk-menu-subview :menu-list '(":note"
 							    ":position"
 							    ":note-n-position")))
 	  &optional
-	  (accents-voice 3)
 	  (rule-type  () :rule-type-mbox)
 	  (weight 1))
 	 "Restricts where metric accents occur depending on the note onsets defined in an 'accents voice'. If an accent occurs, then it is on the position defined. 
