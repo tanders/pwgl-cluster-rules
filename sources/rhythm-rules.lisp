@@ -662,7 +662,7 @@ Other arguments are inherited from r-rhythm-rhythm.
   "Accent rule for metric-accents or accents-in-other-voice. Accented notes are longer than the preceeding and the succeeding note."
   (destructuring-bind ((dur1 offs1) (dur2 offs2) (dur3 offs3)) (list d_offs1 d_offs2 d_offs3)
     (if (every #'plusp (list dur1 dur2 dur3)) ; no rests 
-	(let ((accent-rating2 (< dur1 dur2 dur3)))
+	(let ((accent-rating2 (and (> dur2 dur1) (> dur2 dur3))))
 	  ;; If note is accented then start on what is set at metric-structure, e.g., on beat (but there can be beats etc. without accent)
 	  (if accent-rating2
 					; (> accent-rating2 0) ;; use when generalised later...
