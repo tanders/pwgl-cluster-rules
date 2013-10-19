@@ -513,7 +513,7 @@ BUG: Arg factor seemingly not fully working as documented yet if factor > 1.
 ;;;
 
 ;; This is a macro instead of function for efficiency purposes: args are only computed if needed.
-(defun accent-strictness (strictness accented-note? on-position?)
+(defmacro accent-strictness (strictness accented-note? on-position?)
   "[Aux def] Controls which constrain is applied between accented-note? (Boolean whether note follows accent constraint) and on-position? (Boolean whether note is on the position of a metric accent). 
 
 Arg strictness is a keyword switching bewtween three cases.
@@ -521,10 +521,10 @@ Arg strictness is a keyword switching bewtween three cases.
   :position -- any metric accent has an accented note (but there can accented notes also elsewhere)
   :note-n-position -- any accented note is situated on a metric accent and any metric accent has an accented note 
 "
-  (case strictness
-    (:note (if accented-note? on-position? T))
-    (:position (if on-position? accented-note? T))
-    (:note-n-position (and on-position? accented-note?))))
+  `(case ,strictness
+    (:note (if ,accented-note? ,on-position? T))
+    (:position (if ,on-position? ,accented-note? T))
+    (:note-n-position (and ,on-position? ,accented-note?))))
 
 
 ;; TODO: for metric-accents and accents-in-other-voice
