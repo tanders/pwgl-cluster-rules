@@ -372,7 +372,6 @@ Other arguments are inherited from r-pitch-pitch."
 			rule-type weight))
 
 
-;; TODO: def a similar box where max/min intervals can be defined
 (PWGLDef set-harmonic-intervals 
 	 ((voices '(0 1))
 	  (intervals NIL)
