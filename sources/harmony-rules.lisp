@@ -446,11 +446,11 @@ Other arguments are inherited from r-pitch-pitch.
 				    (min-interval NIL)
 				    (max-interval NIL)
 				    (input-mode () (ccl::mk-menu-subview :menu-list '(":all" ":beat" ":1st-beat" ":1st-voice" ":at-timepoints")))
+				    (combinations () (ccl::mk-menu-subview :menu-list '(":consecutive-voices" ":over-bass" ":all-combinations")))
 				    (gracenotes? () (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
 				    &optional
-				    (combinations () (ccl::mk-menu-subview :menu-list '(":consecutive-voices" ":over-bass" ":all-combinations")))
 				    (timepoints '(0))
-				    (rule-type  () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+				    (rule-type () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
 				    (weight 1))
 	 "Limit the minimum/maximum harmonic interval of simultaneous notes between given voices. 
 
@@ -458,8 +458,6 @@ Args:
   voices (list of ints): the voices to constrain.
   min-interval (number or NIL): minimum interval in semitones. Ignored if NIL.
   max-interval (number or NIL): maximum interval in semitones. Ignored if NIL. 
-
-Optional args:
   combinations: Controls whether to constrain only intervals between the voice with highest note number and other voices (:over-bass), between pairs of consecutive voices such as soprano-alto, alto-tenor etc. (:consecutive-voices), or between all voice combinations (:all-combinations).
 
 Other arguments are inherited from r-pitch-pitch.
@@ -467,12 +465,12 @@ Other arguments are inherited from r-pitch-pitch.
 	 ()
 	 (flat
 	  (flet ((rule (pitches)
-		   (format T "min/max-harmonic-interval rule: pitches: ~A" pitches)
+		   ;; (format T "min/max-harmonic-interval rule: pitches: ~A" pitches)
 		   (let ((pitch1 (first pitches))
 			 (pitch2 (second pitches)))		  
 		     (if (and pitch1 pitch2) ; no rests
 			 (let ((interval (abs (- pitch1 pitch2))))
-			   (format T "min/max-harmonic-interval rule: interval: ~A, >= min-interval: ~A, <= max-interval: ~A" interval 
+			   ;; (format T "min/max-harmonic-interval rule: interval: ~A, >= min-interval: ~A, <= max-interval: ~A" interval 
 				   (if min-interval 
 				       (<= min-interval interval)
 				       T)
@@ -487,11 +485,12 @@ Other arguments are inherited from r-pitch-pitch.
 				    T)))
 			 T))))
 	    (let ((sorted-voices (sort voices #'>)))
+	      ;; (format T "min/max-harmonic-interval: sorted-voices: ~A, combinations: ~A, rule-type:~A~%" sorted-voices combinations rule-type)
 	      (case combinations 
 		(:over-bass 
 		 (let ((bass-voice (first sorted-voices)))
 		   (mapcar #'(lambda (voice)
-			       (format T "min/max-harmonic-interval :over-bass")
+			       ;; (format T "min/max-harmonic-interval :over-bass")
 			       (r-pitch-pitch #'rule
 					      (list bass-voice voice)
 					      timepoints
@@ -502,7 +501,7 @@ Other arguments are inherited from r-pitch-pitch.
 			   (rest sorted-voices))))
 		(:consecutive-voices
 		 (mapcar #'(lambda (voice1 voice2)
-			     (format T "min/max-harmonic-interval :consecutive-voices: voice1: ~A, voice2: ~A" voice1 voice2)
+			     ;; (format T "min/max-harmonic-interval :consecutive-voices: voice1: ~A, voice2: ~A" voice1 voice2)
 			     (r-pitch-pitch #'rule
 					    (list voice1 voice2)
 					    timepoints
@@ -513,7 +512,7 @@ Other arguments are inherited from r-pitch-pitch.
 			 (butlast sorted-voices) (rest sorted-voices)))
 		(:all-combinations
 		 (map-pairwise #'(lambda (voice1 voice2)
-				   (format T "min/max-harmonic-interval :all-combinations")
+				   ;; (format T "min/max-harmonic-interval :all-combinations")
 				   (r-pitch-pitch #'rule
 						  (list voice1 voice2)
 						  timepoints
