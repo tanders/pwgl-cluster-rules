@@ -118,6 +118,44 @@ Other arguments are inherited from r-pitch-pitch. For example, it is possible to
 	   (if (listp voices) voices (list voices))))
 
 
+
+(PWGLDef long-notes-chord-PCs ((voices 2)
+			       (max-nonharmonic-dur 1/1)
+			       (gracenotes?  () :gracenotes?-exclude-mbox)
+			       &optional
+			       (rule-type  () :rule-type-mbox)
+			       (weight 1)
+			       (chord-voice 1))
+	 "Every note in the given voice(s) with a duration exceeding max-nonharmonic-dur (on any metric position) must be a harmonic tone: the PC of such notes must be a member of the underlying chord (its PCs). The chord is represented as a simultaneous chord in another voice (voice 1 by default). I is either given directly to the clusterengine's pitch domain of that scale voice, or using read-harmony-file, or controlled with other constraints on that voice. 
+
+Args: 
+voices (int or list of ints): the voice(s) to which this constraint is applied.
+max-nonharmonic-dur (int): the maximum duration for which non-harmonic pitches are permitted.
+
+Optional args:
+chord-voice (int, default 1): the voice representing the underlying chord.
+
+Other arguments are inherited from r-pitch-pitch. For example, it is possible to control whether this constraint should be applied to all notes, or only specific notes (input-mode). By default, it is applied to notes starting on a beat."
+	 () 
+	 (mapcar #'(lambda (voice)
+		     (r-pitch-pitch #'(lambda (p_d_offs)
+					"The PC of (first pitches) is in the PCs of (second pitches)."
+					(destructuring-bind ((pitch1 dur1 offs1) (pitch2 dur2 offs2)) p_d_offs
+					  (if (and (and pitch1 pitch2) ;; no rests
+						   (> dur1 max-nonharmonic-dur)) ;; main condition
+					      (member (mod pitch1 12)
+						      (mapcar #'(lambda (p) (mod p 12))
+							      pitch2))					    
+					      T)))
+				    (list voice chord-voice)
+				    '(0)
+				    :all
+				    gracenotes?
+				    :p_d_offs
+				    rule-type weight))
+		 (if (listp voices) voices (list voices))))
+
+
 ;; chord-tone-before/after-rest
 
 (PWGLDef chord-tone-before/after-rest ((voices 2)
