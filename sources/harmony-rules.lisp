@@ -469,14 +469,7 @@ Other arguments are inherited from r-pitch-pitch.
 		   (let ((pitch1 (first pitches))
 			 (pitch2 (second pitches)))		  
 		     (if (and pitch1 pitch2) ; no rests
-			 (let ((interval (abs (- pitch1 pitch2))))
-			   ;; (format T "min/max-harmonic-interval rule: interval: ~A, >= min-interval: ~A, <= max-interval: ~A" interval 
-				   (if min-interval 
-				       (<= min-interval interval)
-				       T)
-				   (if max-interval 
-				       (<= interval max-interval)
-				       T))
+			 (let ((interval (abs (- pitch1 pitch2))))			   
 			   (and (if min-interval 
 				    (<= min-interval interval)
 				    T)
