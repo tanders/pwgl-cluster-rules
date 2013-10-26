@@ -44,9 +44,9 @@
 		 durations-control-intervals
 		 ))
      ("harmony"  ("Cluster Engine" (cluster-engine::r-chords))
-                 (only-scale-PCs only-chord-PCs chord-tone-before/after-rest
+                 (only-scale-PCs only-chord-PCs long-notes-chord-PCs chord-tone-before/after-rest
 		  chord-PC-at-1st-tone-HACK stepwise-non-chord-tone-resolution 
-		  unequal-sim-PCs number-of-sim-PCs set-harmonic-intervals
+		  unequal-sim-PCs number-of-sim-PCs set-harmonic-intervals min/max-harmonic-interval
 		  tintinnabuli-M-voice tintinnabuli-T-voice))
      ("counterpoint" ("Cluster Engine" (cluster-engine::r-canon))
                      (no-voice-crossing no-parallels))

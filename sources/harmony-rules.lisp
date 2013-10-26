@@ -396,49 +396,132 @@ Args:
 Other arguments are inherited from r-pitch-pitch.
 "
 	 () 
-	 (flet ((rule (pitches)
-	          (if (first pitches) ; no rests 
-		      (let ((interval (case pcs?
-					(:pitches (abs (- (first pitches) (second pitches))))
-					(:pcs (mod (abs (- (first pitches) (second pitches))) 12)))))
-			(case exclude/only
-			  (:exclude-given (not (member interval intervals)))
-			  (:only-given (member interval intervals))))
-		    T)))    
-	 (let ((sorted-voices (sort voices #'>)))
-	   (case combinations 
-	     (:over-bass 
-	      (let ((bass-voice (first sorted-voices)))
-		(mapcar #'(lambda (voice)
-			    (r-pitch-pitch #'rule
-					   (list bass-voice voice)
-					   timepoints
-					   input-mode
-					   gracenotes?
-					   :pitch
-					   rule-type weight)) 
-			    (rest sorted-voices))))
-	     (:consecutive-voices
-	      (mapcar #'(lambda (voice1 voice2)
-			  (r-pitch-pitch #'rule
-					 (list voice1 voice2)
-					 timepoints
-					 input-mode
-					 gracenotes?
-					 :pitch
-					 rule-type weight)) 
-		      (butlast sorted-voices) (rest sorted-voices)))
-	     (:all-combinations
-	      (map-pairwise #'(lambda (voice1 voice2)
-				(r-pitch-pitch #'rule
-					       (list voice1 voice2)
-					       timepoints
-					       input-mode
-					       gracenotes?
-					       :pitch
-					       rule-type weight)) 
-			    sorted-voices))))))
+	 (flat
+	  (flet ((rule (pitches)
+		   (if (first pitches) ; no rests 
+		       (let ((interval (case pcs?
+					 (:pitches (abs (- (first pitches) (second pitches))))
+					 (:pcs (mod (abs (- (first pitches) (second pitches))) 12)))))
+			 (case exclude/only
+			   (:exclude-given (not (member interval intervals)))
+			   (:only-given (member interval intervals))))
+		       T)))    
+	    (let ((sorted-voices (sort voices #'>)))
+	      (case combinations 
+		(:over-bass 
+		 (let ((bass-voice (first sorted-voices)))
+		   (mapcar #'(lambda (voice)
+			       (r-pitch-pitch #'rule
+					      (list bass-voice voice)
+					      timepoints
+					      input-mode
+					      gracenotes?
+					      :pitch
+					      rule-type weight)) 
+			   (rest sorted-voices))))
+		(:consecutive-voices
+		 (mapcar #'(lambda (voice1 voice2)
+			     (r-pitch-pitch #'rule
+					    (list voice1 voice2)
+					    timepoints
+					    input-mode
+					    gracenotes?
+					    :pitch
+					    rule-type weight)) 
+			 (butlast sorted-voices) (rest sorted-voices)))
+		(:all-combinations
+		 (map-pairwise #'(lambda (voice1 voice2)
+				   (r-pitch-pitch #'rule
+						  (list voice1 voice2)
+						  timepoints
+						  input-mode
+						  gracenotes?
+						  :pitch
+						  rule-type weight)) 
+			       sorted-voices)))))))
 
+
+;; TODO: 
+;; Add arg: absolution intervals or including neg?
+(PWGLDef min/max-harmonic-interval ((voices '(0 1))
+				    (min-interval NIL)
+				    (max-interval NIL)
+				    (combinations () (ccl::mk-menu-subview :menu-list '(":consecutive-voices" ":over-bass" ":all-combinations")))
+				    (input-mode () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
+				    (gracenotes? () (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
+				    &key
+				    (timepoints '(0))
+				    (rule-type  () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
+				    (weight 1))
+	 "Limit the minimum/maximum harmonic interval of simultaneous notes between given voices. 
+
+Args: 
+  voices (list of ints): the voices to constrain.
+  min-interval (number or NIL): minimum interval in semitones. Ignored if NIL.
+  max-interval (number or NIL): maximum interval in semitones. Ignored if NIL. 
+  combinations: Controls whether to constrain only intervals between the bass and a higher voice (:over-bass), between pairs of consecutive voices such as soprano-alto, alto-tenor etc. (:consecutive-voices), or between all voice combinations (:all-combinations).
+
+Other arguments are inherited from r-pitch-pitch.
+"
+	 ()
+	 (flat
+	  (flet ((rule (pitches)
+		   (format T "min/max-harmonic-interval rule: pitches: ~A" pitches)
+		   (let ((pitch1 (first pitches))
+			 (pitch2 (second pitches)))		  
+		     (if (and pitch1 pitch2) ; no rests
+			 (let ((interval (abs (- pitch1 pitch2))))
+			   (format T "min/max-harmonic-interval rule: interval: ~A, >= min-interval: ~A, <= max-interval: ~A" interval 
+				   (if min-interval 
+				       (<= min-interval interval)
+				       T)
+				   (if max-interval 
+				       (<= interval max-interval)
+				       T))
+			   (and (if min-interval 
+				    (<= min-interval interval)
+				    T)
+				(if max-interval 
+				    (<= interval max-interval)
+				    T)))
+			 T))))
+	    (let ((sorted-voices (sort voices #'>)))
+	      (case combinations 
+		(:over-bass 
+		 (let ((bass-voice (first sorted-voices)))
+		   (mapcar #'(lambda (voice)
+			       (format T "min/max-harmonic-interval :over-bass")
+			       (r-pitch-pitch #'rule
+					      (list bass-voice voice)
+					      timepoints
+					      input-mode
+					      gracenotes?
+					      :pitch
+					      rule-type weight)) 
+			   (rest sorted-voices))))
+		(:consecutive-voices
+		 (mapcar #'(lambda (voice1 voice2)
+			     (format T "min/max-harmonic-interval :consecutive-voices: voice1: ~A, voice2: ~A" voice1 voice2)
+			     (r-pitch-pitch #'rule
+					    (list voice1 voice2)
+					    timepoints
+					    input-mode
+					    gracenotes?
+					    :pitch
+					    rule-type weight)) 
+			 (butlast sorted-voices) (rest sorted-voices)))
+		(:all-combinations
+		 (map-pairwise #'(lambda (voice1 voice2)
+				   (format T "min/max-harmonic-interval :all-combinations")
+				   (r-pitch-pitch #'rule
+						  (list voice1 voice2)
+						  timepoints
+						  input-mode
+						  gracenotes?
+						  :pitch
+						  rule-type weight)) 
+			       sorted-voices))
+		)))))
 
 	  
 ;;
