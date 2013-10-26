@@ -440,15 +440,15 @@ Other arguments are inherited from r-pitch-pitch.
 			       sorted-voices)))))))
 
 
-;; TODO: 
-;; Add arg: absolution intervals or including neg?
+;; ? TODO: 
+;; ? Add arg: absolution intervals or including neg? -- Do only if actually needed :)
 (PWGLDef min/max-harmonic-interval ((voices '(0 1))
 				    (min-interval NIL)
 				    (max-interval NIL)
-				    (combinations () (ccl::mk-menu-subview :menu-list '(":consecutive-voices" ":over-bass" ":all-combinations")))
-				    (input-mode () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat" ":1st-voice" ":at-timepoints")))
+				    (input-mode () (ccl::mk-menu-subview :menu-list '(":all" ":beat" ":1st-beat" ":1st-voice" ":at-timepoints")))
 				    (gracenotes? () (ccl::mk-menu-subview :menu-list '(":exclude-gracenotes" ":include-gracenotes")))
-				    &key
+				    &optional
+				    (combinations () (ccl::mk-menu-subview :menu-list '(":consecutive-voices" ":over-bass" ":all-combinations")))
 				    (timepoints '(0))
 				    (rule-type  () (ccl::mk-menu-subview :menu-list '(":true/false" ":heur-switch")))
 				    (weight 1))
@@ -458,7 +458,9 @@ Args:
   voices (list of ints): the voices to constrain.
   min-interval (number or NIL): minimum interval in semitones. Ignored if NIL.
   max-interval (number or NIL): maximum interval in semitones. Ignored if NIL. 
-  combinations: Controls whether to constrain only intervals between the bass and a higher voice (:over-bass), between pairs of consecutive voices such as soprano-alto, alto-tenor etc. (:consecutive-voices), or between all voice combinations (:all-combinations).
+
+Optional args:
+  combinations: Controls whether to constrain only intervals between the voice with highest note number and other voices (:over-bass), between pairs of consecutive voices such as soprano-alto, alto-tenor etc. (:consecutive-voices), or between all voice combinations (:all-combinations).
 
 Other arguments are inherited from r-pitch-pitch.
 "
