@@ -266,6 +266,8 @@ weight-offset (int): offset to the heuristic weight of this rule (the higher the
 transform: Change the whole sequence of input profile with some definition (e.g., reverse or rotate the sequence, or remove some elements). Expects a function or abstraction expecting a list and returning a list. Some functions are already predefined for convenience (menu Cluster Rules - profile - transformations).
 
 map: Tranform every individual profile value with some definition (e.g., add some random offset). Expects a function or abstraction expecting a number and returning a number. Some functions are already predefined for convenience (menu Cluster Rules - profile - mappings). You can used multiple functions together (transform the transformation of profile values...) by combining multiple functions with compose-functions.
+
+BUG: Rhythm not really constrained?
 "
 	 (:groupings '(3 2))
 	 (flet ((direction-int (x1 x2)
