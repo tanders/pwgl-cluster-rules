@@ -16,6 +16,7 @@
   :description "Rules defined for the cluster-engine by Orjan Sandred." 
   :author "Torsten Anders"
   :version "0.001"
+  :default-component-class ccl::pwgl-source-file
   :serial t ;; the dependencies are linear.
   :components ((:file "sources/package")
 	       (:file "sources/utils")
