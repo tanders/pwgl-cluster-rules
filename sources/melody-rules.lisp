@@ -583,6 +583,57 @@ Other arguments are inherited from R-pitches-one-voice."
 	   voices :pitches rule-type weight))
 
 
+;; prefer-interval-hr
+
+;; TODO: translate list into vector for efficiency
+(PWGLDef prefer-interval-hr ((voices 0)
+			     (interval 1)
+			     &optional
+			     (n 0)
+			     (weight-factor 1))
+	 "Heuristic rule that constrains the preferred melodic interval size. By default, small steps are preferred (interval is 0). The more an interval deviates from the set interval the less likely it is to be chosen.
+
+Args:
+
+voices (int or list of ints): The voice(s) to which the constraint is applied. 
+
+interval (number or BPF): The preferred interval size. A number sets a constant size, which a BPF sets a size that changes over time. NOTE: if a BPF is used then make sure arg n (see below) is greater than 0.
+
+n (int): The first n notes are affected. If 0, then n is disregarded.
+
+weight: factor for the heuristic weight.
+"
+	 ()
+	 ;; Heuristic rules prefer large return values, hence the (processed) negative interval is returned
+	 (hr-pitches-one-voice (cond 
+				 ((and (= n 0) (numberp interval))
+				   ;; constant interval
+				   #'(lambda (pitch1 pitch2) 
+				       ;; Heuristic rules prefer large return values, hence the negative interval is returned
+				       (- (* (abs (- interval
+						     (abs (- pitch1 pitch2))))
+					     weight-factor))))
+				 ((> n 0)
+				   (let ((offsets (cond
+						    ((numberp interval) (make-list n :initial-element interval))
+						    ((ccl::break-point-function-p interval) (ccl::pwgl-sample interval n)))))
+				     ;; changing interval 
+				     #'(lambda (pitch_n1  pitch_n2) 
+					 (destructuring-bind ((pitch2 n1) (pitch2 n2)) (list pitch_n1  pitch_n2)
+					   (if (<= n1 n)
+					       (let ((offset (nth n1 offsets)))
+						 ;; (format t "n: ~A offset: ~A~%" n1 offset)
+						 (- (* (abs (- offset
+							       (abs (- (first pitch_n1) (first pitch_n2)))))
+						       weight-factor)))
+					       0)))))
+				 (T (error "prefer-interval-hr: interval set to a BPF, but n left at 0.")))
+			       voices
+			       (if (= n 0)
+				   :pitches
+				   :pitch/nth)))
+
+
 ;; accumulative-interval
 
 ;; TODO:
