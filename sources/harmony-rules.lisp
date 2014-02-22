@@ -535,6 +535,8 @@ Ideas for using tintinnabuli in settings beyond the "Arvo Pärt sound". Doing th
 (PWGLDef tintinnabuli-M-voice ((voices 0)
 			       &optional
 			       (max-interval 2)
+			       (rule-type  () :rule-type-mbox)
+			       (weight 1)
 			       (scale-voice 0))
 	 "Rules for a tintinnabuli M-voice, inspired by Arvo Pärt (slightly generalised, because this rule is applicable over any harmony). The voice consists only of scale tones that move stepwise (max interval is whole tone).  
 
@@ -546,13 +548,15 @@ max-interval (default 2): maximum interval in semitones.
 scale-voice (default 0): the voice representing the underlying scale."
 	 () 
 	 (rules->cluster 
-	  (min/max-interval voices :max-interval max-interval)
-	  (only-scale-PCs voices :all :include-gracenotes :true/false 1 scale-voice)))
+	  (min/max-interval voices :max-interval max-interval :rule-type rule-type :weight weight)
+	  (only-scale-PCs voices :all :include-gracenotes rule-type weight scale-voice)))
 
 (PWGLDef tintinnabuli-T-voice ((voices 0)
 			       &key			       
-			       (min-interval 3)
+			       (min-interval 0)
 			       (max-interval 12)
+			       (rule-type  () :rule-type-mbox)
+			       (weight 1)
 			       (chord-voice 1))
 	 "Rules for a tintinnabuli T-voice, inspired by Arvo Pärt (slightly generalised, because this rule is applicable over any harmony). The voice consists only of chord tones, and the minimum/maximum interval size can be controlled.  
 
@@ -565,8 +569,8 @@ max-interval (default 12): maximum interval in semitones.
 chord-voice (default 1): the voice representing the underlying chord."
 	 () 
 	 (rules->cluster 
-	  (min/max-interval voices :min-interval min-interval :max-interval max-interval)
-	  (only-chord-PCs voices :all :include-gracenotes :true/false 1 chord-voice)))
+	  (min/max-interval voices :min-interval min-interval :max-interval max-interval :rule-type rule-type :weight weight)
+	  (only-chord-PCs voices :all :include-gracenotes rule-type weight chord-voice)))
 
 
 
