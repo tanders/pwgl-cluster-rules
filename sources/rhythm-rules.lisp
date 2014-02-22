@@ -684,11 +684,23 @@ Other arguments are inherited from r-rhythm-rhythm.
 	  (>= dur min-duration)))))
 
 (PWGLDef mk-accent->-prep-OR->=-dur-ar ((min-duration 1/4))
-  "Returns an accent rule for metric-accents or accents-in-other-voice. Accented notes are EITHER longer than the preceeding note and at least as long as the succeeding note OR at least min-duration long."
+  "Returns an accent rule for metric-accents or accents-in-other-voice. Accented notes are EITHER longer than the preceeding note and at least as long as the succeeding note, OR at least min-duration long."
   ()
   #'(lambda (d_offs1 d_offs2 d_offs3)
       (or (accent-longer-than-predecessor-ar d_offs1 d_offs2 d_offs3)
 	  (funcall (mk-accent-has-at-least-duration-ar min-duration) d_offs2))))
+
+
+;; must contain some bug: some notes that should be accents are not recognised
+(PWGLDef mk-accent->-prep-AND->=-dur-ar ((duration-threshold 1/4))
+  "Returns an accent rule for metric-accents or accents-in-other-voice. Accented notes are longer than the preceeding note. Additionally, if the succeeding note is of the same length or longer, then they are at least duration-threshold long to count as accented."
+  ()
+  #'(lambda (d_offs1 d_offs2 d_offs3)
+      (destructuring-bind ((dur1 offs1) (dur2 offs2) (dur3 offs3)) (list d_offs1 d_offs2 d_offs3)
+	(when (every #'plusp (list dur1 dur2 dur3)) ; no rests 
+	  (and (< dur1 dur2)
+	       (if (>= dur2 dur3)
+		   (>= dur2 duration-threshold)))))))
 
 
 #|
