@@ -693,7 +693,8 @@ Other arguments are inherited from R-pitches-one-voice."
 
 ;; durations-control-intervals
 
-(PWGLDef durations-control-intervals ((rel-factor 32)
+(PWGLDef durations-control-intervals ((voices 0)
+				      (rel-factor 32)
 				      (acc-factor 2)
 				      &optional
 				      (rule-type  () :rule-type-mbox)
@@ -701,7 +702,10 @@ Other arguments are inherited from R-pitches-one-voice."
 	 "Pitch intervals and durations are lineary related.
 
 Args:
+voices (int or list of ints): The voice(s) to which the rule is applied. 
+
 rel-factor (relation factor): the interval is about the duration times rel-factor.
+
 acc-factor (accuracy factor): factor how much the interval can deviate from that relation above and below. 
 
 Examples: If rel-factor is 1 and acc-factor is also one, then the duration of a note would need to be the same as the interval starting at it (e.g., duration = 2 and interval is 2). If rel-factor is 32 and acc-factor is 2 (the defaults) the the interval can be any value between duration*32/2 and duration*32*2.  
