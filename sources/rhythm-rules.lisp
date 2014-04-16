@@ -554,7 +554,8 @@ Arg strictness is a keyword switching bewtween three cases.
 Args:
   metric-structure: Position where accents are controlled (on any beat or the first beat of a measure).
 
-  accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8) 
+  accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8). A note is 'on' the accent if its offset = 0. 
+Some accent rules are predefined and can be simply selected in the menu of the argument. Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules. 
 
   Some accent rules are predefined and can be simply selected in the menu of the argument. 
     :longer-than-predecessor: Accented notes are longer than the preceeding note and at least as long as the succeeding note. BUG: not constrained for first and last 2 notes! (fixing that needs more flexible rule applicators)
@@ -629,6 +630,7 @@ Other arguments are inherited from r-rhythm-rhythm.
 		     ;; r-note-meter constraints all events of voice
 		     (r-rhythm-rhythm (let* ((rule (case accent-rule
 						     (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+						     (:longer-than-predecessor-strict #'accent-longer-than-predecessor-strict-ar)
 						     (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
 						     (otherwise accent-rule)))
 					     (length-rule-args (length (ccl::function-lambda-list rule))))
@@ -667,6 +669,11 @@ Other arguments are inherited from r-rhythm-rhythm.
     (when (every #'plusp (list dur1 dur2 dur3)) ; no rests 
       (and (< dur1 dur2) (>= dur2 dur3)))))
 
+(defun accent-longer-than-predecessor-strict-ar  (d_offs1 d_offs2 ignore)
+  "Accent rule for metric-accents or accents-in-other-voice. Accented notes are longer than the preceeding note. A successor note after the note in question is not relevant."
+  (destructuring-bind ((dur1 offs1) (dur2 offs2)) (list d_offs1 d_offs2)
+    (when (every #'plusp (list dur1 dur2)) ; no rests 
+      (< dur1 dur2))))
 
 (defun accent-longer-than-neighbours-ar  (d_offs1 d_offs2 d_offs3)
   "Accent rule for metric-accents or accents-in-other-voice. Accented notes are longer than the preceeding and the succeeding note."
