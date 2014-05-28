@@ -526,7 +526,9 @@ Arg strictness is a keyword switching bewtween three cases.
   `(case ,strictness
     (:note (if ,accented-note? ,on-position? T))
     (:position (if ,on-position? ,accented-note? T))
-    (:note-n-position (and ,on-position? ,accented-note?))))
+    (:note-n-position (and 
+		       (if ,accented-note? ,on-position? T)
+		       (if ,on-position? ,accented-note? T)))))
 
 
 ;; TODO: for metric-accents and accents-in-other-voice
