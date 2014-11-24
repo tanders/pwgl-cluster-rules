@@ -397,7 +397,7 @@ Other arguments are inherited from r-pitch-pitch.
 	 () 
 	 (flat
 	  (flet ((rule (pitches)
-		   (if (first pitches) ; no rests 
+		   (if (and (first pitches) (second pitches)) ; no rests 
 		       (let ((interval (case pcs?
 					 (:pitches (abs (- (first pitches) (second pitches))))
 					 (:pcs (mod (abs (- (first pitches) (second pitches))) 12)))))
