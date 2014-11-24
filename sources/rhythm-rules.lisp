@@ -87,8 +87,8 @@ NOTE: This rule can apply different BPFs to different voices with different sett
 	 (:groupings '(3 2))
 	 (let ((l (length (if (listp BPFs) BPFs (list BPFs)))))
 	   (mappend #'(lambda (BPF voice min-scaling max-scaling rnd-deviation permutate)
-			(format T "rhythm-profile-BPF-hr 1: args: ~A ~%" 
-				(list BPF voice min-scaling max-scaling rnd-deviation permutate))
+			;; (format T "rhythm-profile-BPF-hr 1: args: ~A ~%" 
+			;; 	(list BPF voice min-scaling max-scaling rnd-deviation permutate))
 			(let* ((BPF-xs (pw::g-scaling (pw::g-power (pw::g-scaling (ccl::pwgl-sample BPF n) 
 										  0 1) 
 								   3)
@@ -99,8 +99,8 @@ NOTE: This rule can apply different BPFs to different voices with different sett
 			       (BPF-rnd-xs (funcall permutate (pw::g+ BPF-xs (pw::g* BPF-xs rnds)))))
 			  (hr-rhythms-one-voice #'(lambda (xs) 
 						    "Returns a heuristic -- better BPF matches are preferred. Essentially, returns the abs difference between current dur and corresponding env value."
-						    (format T "rhythm-profile-BPF-hr: xs: ~A, BPF-rnd-xs: ~A ~%" 
-							    xs BPF-rnd-xs)
+						    ;; (format T "rhythm-profile-BPF-hr: xs: ~A, BPF-rnd-xs: ~A ~%" 
+						    ;; 	    xs BPF-rnd-xs)
 						    (- 1000 (* (abs 
 								;; abs: both rests and note can occur
 								(- (abs (first (last xs))) 
@@ -150,7 +150,7 @@ NOTE: This rule can apply different BPFs to different voices with different sett
 ;; no-syncopation
 
 (defun no-syncopation-rule (offs)
-  "Returns function (constraint). On the given beats a note must start. Constraint intended for r-meter-note applied to either 1st beats of bars or beats with input model offs."
+  "On the given beat a note must start. Constraint intended for r-meter-note applied to either 1st beats of bars or beats with input model offs."
   (= offs 0))
 
 (PWGLDef no-syncopation 
@@ -640,7 +640,7 @@ BUG: Arg factor seemingly not fully working as documented yet if factor > 1.
 	 ()
 	 (let ((voice1 (first voices)))
 	   (mapcar #'(lambda (voice2)
-		       (format T "similar-sim-durations 1: voice1: ~A, voice2: ~A~%" voice1 voice2)
+		       ;; (format T "similar-sim-durations 1: voice1: ~A, voice2: ~A~%" voice1 voice2)
 		       (R-rhythm-rhythm #'(lambda (d1_offset_d2)
 					    (destructuring-bind (dur1 offset dur2) d1_offset_d2
 					      (let ((both-notes-or-rests?  
@@ -706,6 +706,7 @@ Arg strictness is a keyword switching bewtween three cases.
 	 ((voices 0)
 	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":1st-beat" ":beats")))
 	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
+							     ":longer-than-predecessor-strict"
 							     ":longer-than-neighbours")))
 	  (strictness () (ccl::mk-menu-subview :menu-list '(":note"
 							    ":position"
@@ -730,23 +731,29 @@ Some accent rules are predefined and can be simply selected in the menu of the a
 
   strictness: Controls how events are constrained. There are three different cases.
     :note: if an event meets the accent-rule, then it must be on a specified metric position (see metric-structure). However, there can be such metric positions without notes meeting the accent-rule.
-    :position: if an event is on a specified metric position (see metric-structure) then it must meet the accent-rule. However, there can be accentuated notes at other metric positions. 
+    :position: if an event is on a specified metric position (see metric-structure) then it must meet the accent-rule. However, there can be accentuated notes at other metric positions. Also, if a note continues sounding at the specified position that started earlier (syncopation) then no accent at that position can be enforced (because only notes are checked, not metric positions).
     :note-n-position: if an event meets the accent-rule, then it must be on a specified metric position -- and vice versa.
  
 Other arguments are inherited from r-note-meter.
+
 " 
 	 ()
 	 ;; r-note-meter constraints all events of the given voice(s)
 	 (r-note-meter (let* ((rule (case accent-rule
-				     (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
-				     (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
-				     (otherwise accent-rule)))
+				      (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+				      (:longer-than-predecessor-strict #'accent-longer-than-predecessor-strict-ar)
+				      (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
+				      (otherwise accent-rule)))
 			      (length-rule-args (length (ccl::function-lambda-list rule))))
 			 ;; create a function with same number of args as given rule
 			 (cond ((= length-rule-args 1)
 				#'(lambda (d_offs) 
 				    (accent-strictness 
 				     strictness (funcall rule d_offs) (= (second d_offs) 0))))
+			       ((= length-rule-args 2)
+				#'(lambda (d_offs1 d_offs2) 
+				    (accent-strictness 
+				     strictness (funcall rule d_offs1 d_offs2) (= (second d_offs2) 0))))
 			       ((= length-rule-args 3)
 				#'(lambda (d_offs1 d_offs2 d_offs3) 
 				    (accent-strictness 
@@ -764,6 +771,7 @@ Other arguments are inherited from r-note-meter.
 	 ((voices 1)
 	  (accents-voice 0)
 	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
+							     ":longer-than-predecessor-strict"
 							     ":longer-than-neighbours")))
 	  (strictness () (ccl::mk-menu-subview :menu-list '(":note"
 							    ":position"
@@ -780,9 +788,9 @@ Args:
 Some accent rules are predefined and can be simply selected in the menu of the argument. Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
 
   strictness: Controls how events are constrained. There are three different cases.
-    :note: if an event meets the accent-rule, then it must be on a specified metric position (see metric-structure). However, there can be such metric positions without notes meeting the accent-rule.
-    :position: if an event is on a specified metric position (see metric-structure) then it must meet the accent-rule. However, there can be accentuated notes at other metric positions. 
-    :note-n-position: if an event meets the accent-rule, then it must be on a specified metric position -- and vice versa.
+    :note: if an event meets the accent-rule, then it must be on accented position (there is a simultaneous note onset in the accent-voice). However, there can be such accented positions without notes meeting the accent-rule.
+    :position: if an event is on an accented position then it must meet the accent-rule. However, there can be accentuated notes at other positions. Also, if a note continues sounding at the accented position that started earlier then no accent at that position can be enforced (because only notes in voices are checked, not in accents-voice).
+    :note-n-position: if an event meets the accent-rule, then it must be on a specified accented position -- and vice versa.
 
 Optional args:
 
@@ -804,6 +812,10 @@ Other arguments are inherited from r-rhythm-rhythm.
 					       #'(lambda (d_offs) 
 						   (accent-strictness 
 						    strictness (funcall rule d_offs) (= (second d_offs) 0))))
+					      ((= length-rule-args 2)
+					       #'(lambda (d_offs1 d_offs2) 
+						   (accent-strictness 
+						    strictness (funcall rule d_offs1 d_offs2) (= (second d_offs2) 0))))
 					      ((= length-rule-args 3)
 					       #'(lambda (d_offs1 d_offs2 d_offs3) 
 						   (accent-strictness 
@@ -816,6 +828,58 @@ Other arguments are inherited from r-rhythm-rhythm.
 				      :at-durations-v1				    
 				      ))
 		 (if (listp voices) voices (list voices))))
+
+;; (defun d1_offs_d2->d_offs (d1_offs_d2)
+;;   "[aux def] Swaps list values for accents-in-other-voice-position."
+;;   (list (third d1_offs_d2) (second d1_offs_d2)))
+
+;; (PWGLDef accents-in-other-voice-position
+;; 	 ((voices 1)
+;; 	  (accents-voice 0)
+;; 	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
+;; 							     ":longer-than-predecessor-strict"
+;; 							     ":longer-than-neighbours")))
+;; 	  &optional
+;; 	  (rule-type  () :rule-type-mbox)
+;; 	  (weight 1))
+;; 	 "[Testing] Variant of accents-in-other-voice, but only for the strictness position, that traverses all accents in the accent-voice, to make sure that on any necessary position an accent is enforced (and not avoided by syncopation)."
+;; 	 ()
+;; 	 (mapcar #'(lambda (voice)
+;; 		     ;; r-note-meter constraints all events of voice
+;; 		     (r-rhythm-rhythm (let* ((rule (case accent-rule
+;; 						     (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+;; 						     (:longer-than-predecessor-strict #'accent-longer-than-predecessor-strict-ar)
+;; 						     (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
+;; 						     (otherwise accent-rule)))
+;; 					     (length-rule-args (length (ccl::function-lambda-list rule))))
+;; 					;; create a function with same number of args as given rule
+;; 					(cond ((= length-rule-args 1)
+;; 					       #'(lambda (d1_offs_d2) 
+;; 						   (accent-strictness 
+;; 						    :position (funcall rule (d1_offs_d2->d_offs d1_offs_d2))
+;; 						    (= (second d1_offs_d2) 0))))
+;; 					      ((= length-rule-args 2)
+;; 					       #'(lambda (d1_offs_d2_1 d1_offs_d2_2) 
+;; 						   (accent-strictness 
+;; 						    :position (funcall rule (d1_offs_d2->d_offs d1_offs_d2_1)
+;; 								       (d1_offs_d2->d_offs d1_offs_d2_2))
+;; 						    (= (second d1_offs_d2_2) 0))))
+;; 					      ((= length-rule-args 3)
+;; 					       #'(lambda (d1_offs_d2_1 d1_offs_d2_2 d1_offs_d2_3) 
+;; 						   (accent-strictness 
+;; 						    :position (funcall rule (d1_offs_d2->d_offs d1_offs_d2_1)
+;; 								       (d1_offs_d2->d_offs d1_offs_d2_2) 
+;; 								       (d1_offs_d2->d_offs d1_offs_d2_3))
+;; 						    (= (second d1_offs_d2_2) 0))))
+;; 					      (T (error "Rule ~A with unsupported number of arguments" rule))))
+;; 				      accents-voice
+;; 				      voice				      
+;; 				      :d1_offs_d2
+;; 				      :norm
+;; 				      :at-durations-v1				    
+;; 				      ))
+;; 		 (if (listp voices) voices (list voices))))
+
 
 
 ;;;
@@ -834,7 +898,7 @@ Other arguments are inherited from r-rhythm-rhythm.
     (when (every #'plusp (list dur1 dur2 dur3)) ; no rests 
       (and (< dur1 dur2) (>= dur2 dur3)))))
 
-(defun accent-longer-than-predecessor-strict-ar  (d_offs1 d_offs2 ignore)
+(defun accent-longer-than-predecessor-strict-ar  (d_offs1 d_offs2)
   "Accent rule for metric-accents or accents-in-other-voice. Accented notes are longer than the preceeding note. A successor note after the note in question is not relevant."
   (destructuring-bind ((dur1 offs1) (dur2 offs2)) (list d_offs1 d_offs2)
     (when (every #'plusp (list dur1 dur2)) ; no rests 
@@ -873,6 +937,9 @@ Other arguments are inherited from r-rhythm-rhythm.
 	  (and (< dur1 dur2)
 	       (if (>= dur2 dur3)
 		   (>= dur2 duration-threshold)))))))
+
+
+
 
 
 #|
