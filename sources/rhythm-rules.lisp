@@ -169,6 +169,169 @@ NOTE: This rule can apply different BPFs to different voices with different sett
 		       rule-type weight))
 
 
+
+;; no syncopation (in relation to metric-structure) unless the syncopation is accented (i.e., meets an accent-rule, regardless of the accent positions)
+(PWGLDef no-syncopation-unless-accented
+	 ((voices 1)
+	  (metric-structure () (ccl::mk-menu-subview :menu-list '(":beats" ":1st-beat")))
+ 	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
+							     ":longer-than-predecessor-strict"
+							     ":longer-than-neighbours")))
+	  &optional
+	  (rule-type  () :rule-type-mbox)
+	  (weight 1))
+	 "Restricts syncopations (of level metric-structure) to notes accented according to accent-rule.
+
+Args:
+  voices (int or list of ints): The numbers of voice(s) to constrain.
+
+  accent-rule (menu item or function): A function returning true if an accent is expressed and nil otherwise. The function expects one of more arguments, all in the form (dur offs), where dur is the duration of a note and offs is the offset to the following accent (i.e. the duration until the following accent). Example: '(1/4 -1/8). A note is 'on' the accent if its offset = 0. 
+Some accent rules are predefined and can be simply selected in the menu of the argument. Other predefined accent rules expect additional arguments controlling their effect. These are available under the Cluster Rules sub menu rhythm - accent rules.
+
+
+Other arguments are inherited from r-rhythm-rhythm.
+
+TMP: doc 
+BUG: Still not working. See example ShiftedMetricAccents (for CIM paper).
+I included debugging format instruction, but seeminlgy this is not printed for every note. Double-check for which notes this is skipped.
+Anyway, I may be close with this one...
+
+TODO: Include in rhythm menu, once finished
+" 
+	 ()
+	 (r-meter-note
+	  (let* ((rule (case accent-rule
+			 (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+			 (:longer-than-predecessor-strict #'accent-longer-than-predecessor-strict-ar)
+			 (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
+			 (otherwise accent-rule)))
+		 (length-rule-args (length (ccl::function-lambda-list rule)))) 
+	    (cond ((= length-rule-args 1)
+		   ;; create a function with same number of args as given rule
+		   #'(lambda (offset_dur1)
+		       (destructuring-bind ((offs1 dur1)) (list offset_dur1)
+			 (let ((syncopated? (/= offs1 0))
+			       ;; (accented? (apply rule (list (list dur1 offs1))))
+			       )
+			   (format t "syncopation-unless: offset_dur1 ~S, syncopated? ~S, accented? ~S, result:~S~%" 
+							   offset_dur1 
+							   syncopated?
+							   (apply rule (list (list dur1 offs1)))
+							   (if syncopated? 
+							       (apply rule (list (list dur1 offs1)))
+							       T))
+			   (if syncopated? 
+			     ;; Note: arg order swapped. For r-meter-note (as here) with mode :offset_dur is offset first sub-arg, but for r-note-meter (used by rule metric-accent) with format :d_offs is offset second sub-arg. So, I need to swap subargs for all predefined accent rules. (inefficiency etc due to inconsistency of Cluster Rules)
+			     (apply rule (list (list dur1 offs1)))
+			     T)))))
+		  ((= length-rule-args 2)
+		   #'(lambda (offset_dur1 offset_dur2) 
+		       (destructuring-bind ((offs1 dur1) (offs2 dur2)) (list offset_dur1 offset_dur2)
+			 (let ((syncopated? (/= offs2 0))
+			       ;; (accented? (apply rule (list (list dur1 offs1) (list dur2 offs2) (list dur3 offs3))))
+			       )
+			   (format t "syncopation-unless: offset_durs ~S, syncopated? ~S, accented? ~S, result:~S~%" 
+							   (list offset_dur1 offset_dur2) 
+							   syncopated?
+							   (apply rule (list (list dur1 offs1) (list dur2 offs2)))
+							   (if syncopated? 
+							       (apply rule (list (list dur1 offs1) (list dur2 offs2)))
+							       T))
+			   (if syncopated? 
+			       ;; Note: arg order swapped. For r-meter-note (as here) with mode :offset_dur is offset first sub-arg, but for r-note-meter (used by rule metric-accent) with format :d_offs is offset second sub-arg. So, I need to swap subargs for all predefined accent rules. (inefficiency etc due to inconsistency of Cluster Rules)
+			     (apply rule (list (list dur1 offs1) (list dur2 offs2)))
+			     T)))))
+		  ((= length-rule-args 3)
+		   #'(lambda (offset_dur1 offset_dur2 offset_dur3) 
+		       (destructuring-bind ((offs1 dur1) (offs2 dur2) (offs3 dur3)) (list offset_dur1 offset_dur2 offset_dur3)
+			 (let ((syncopated? (/= offs2 0))
+			       ;; (accented? (apply rule (list (list dur1 offs1) (list dur2 offs2) (list dur3 offs3))))
+			       )
+			   (format t "syncopation-unless: offset_durs ~S, syncopated? ~S, accented? ~S, result:~S~%" 
+							   (list offset_dur1 offset_dur2 offset_dur3) 
+							   syncopated?
+							   (apply rule (list (list dur1 offs1) (list dur2 offs2) (list dur3 offs3)))
+							   (if syncopated? 
+							       (apply rule (list (list dur1 offs1) (list dur2 offs2) (list dur3 offs3)))
+							       T))
+			   (if syncopated? 
+			       ;; Note: arg order swapped. For r-meter-note (as here) with mode :offset_dur is offset first sub-arg, but for r-note-meter (used by rule metric-accent) with format :d_offs is offset second sub-arg. So, I need to swap subargs for all predefined accent rules. (inefficiency etc due to inconsistency of Cluster Rules)
+			     (apply rule (list (list dur1 offs1) (list dur2 offs2) (list dur3 offs3)))
+			     T)))))
+		  (T (error "Rule ~A with unsupported number of arguments" rule))))
+	      voices
+	      metric-structure
+	      :offset_dur
+	      :norm
+	      rule-type weight))
+	 ;; (r-rhythm-rhythm #'my-fun
+	 ;; 		  voice
+	 ;; 		  accents-voice
+	 ;; 		  :d1_offs
+	 ;; 		  :norm
+	 ;; 		  :at-durations-v1				    
+	 ;; 		  )
+
+;; no-syncopation-unless-accent-in-other-voice
+;; no-syncopation-unless-metric-accent
+;; needs r-note-meter for metric accent and r-rhythm-rhythm if accents in other voice
+;; (PWGLDef no-syncopation-unless-accent-in-other-voice 
+;; 	 ((voices 1)
+;; 	  (accents-voice 0)
+;; 	  (accent-rule () (ccl::mk-menu-subview :menu-list '(":longer-than-predecessor"
+;; 							     ":longer-than-neighbours"
+;; 							     ":longer-than-predecessor-strict")))
+;; 	  &optional
+;; 	  (rule-type  () :rule-type-mbox)
+;; 	  (weight 1))
+;; 	 "If a note is not an accent, then it must not be syncopated.
+
+;; BUG: not working yet."
+;; 	 ()
+;; 	 (mapcar #'(lambda (voice)
+;; 		     ;; r-note-meter constraints all events of voice
+;; 		     (r-rhythm-rhythm (let* ((a-rule (case accent-rule
+;; 						       (:longer-than-predecessor #'accent-longer-than-predecessor-ar)
+;; 						       (:longer-than-predecessor-strict #'accent-longer-than-predecessor-strict-ar)
+;; 						       (:longer-than-neighbours #'accent-longer-than-neighbours-ar)
+;; 						       (otherwise accent-rule)))
+;; 					     (length-a-rule-args (length (ccl::function-lambda-list a-rule))))
+;; 					;; create a function with same number of args as given rule
+;; 					(cond ((= length-a-rule-args 1)
+;; 					       #'(lambda (d_offs) 
+;; 						   (format t "syncopation: d_offs: ~S, not accent? ~S, offset? ~S, result:~S~%" 
+;; 							   d_offs 
+;; 							   (not (funcall a-rule d_offs))
+;; 							   (= (second d_offs) 0)
+;; 							   (if (not (funcall a-rule d_offs))
+;; 							       (= (second d_offs) 0)
+;; 							       T))
+;; 						   (if (not (funcall a-rule d_offs))
+;; 						       (= (second d_offs) 0)
+;; 						       T)))
+;; 					      ((= length-a-rule-args 3)
+;; 					       #'(lambda (d_offs1 d_offs2 d_offs3) 
+;; 						   (format t "syncopation: d_offs: ~S, not accent? ~S, offset? ~S, result:~S~%" 
+;; 							   (list d_offs1 d_offs2 d_offs3)
+;; 							   (not (funcall a-rule d_offs1 d_offs2 d_offs3)) 
+;; 							   (= (second d_offs2) 0)
+;; 							   (if (not (funcall a-rule d_offs1 d_offs2 d_offs3))
+;; 							       (= (second d_offs2) 0)
+;; 							       T))
+;; 						   (if (not (funcall a-rule d_offs1 d_offs2 d_offs3))
+;; 						       (= (second d_offs2) 0)
+;; 						       T)))
+;; 					      (T (error "Rule ~A with unsupported number of arguments" rule))))
+;; 				      voice
+;; 				      accents-voice
+;; 				      :d1_offs
+;; 				      :norm
+;; 				      :at-durations-v1))
+;; 		 (if (listp voices) voices (list voices))))
+
+
+
+
 ;; only-simple-syncopations
 
 (defun is-syncopation (dur offs)
