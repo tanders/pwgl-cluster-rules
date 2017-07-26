@@ -310,13 +310,13 @@ BUG: Rhythm not really constrained?
 					 ;; TODO: unfinished for rhythm -- how to compute distance of distances?
 					 (:intervals (if (>= l 2)
 							 (case mode
-							   (:pitch (- (apply #'- (last xs 2))
-								      (- (nth (- l 2) mapped-profile)
-									 (nth (- l 1) mapped-profile))))
+							   (:pitch (- (abs (- (apply #'- (last xs 2))
+									      (- (nth (- l 2) mapped-profile)
+										 (nth (- l 1) mapped-profile))))))
 							   ;; for rhythm distance is quotient not difference
-							   (:rhythm (- (apply #'/ (last xs 2))
-								       (/ (nth (- l 2) mapped-profile)
-									  (nth (- l 1) mapped-profile)))))
+							   (:rhythm (abs (- (apply #'/ (last xs 2))
+									    (/ (nth (- l 2) mapped-profile)
+									       (nth (- l 1) mapped-profile))))))
 						       0))
 					 ;; distance between directions of last two vals
 					 ;; TODO: for rhythm def direction as whether distances are smaller or larger than 1 not 0
@@ -334,6 +334,86 @@ BUG: Rhythm not really constrained?
 			(:pitch :all-pitches)
 			(:rhythm :list-with-all-durations))))))
 
+
+(PWGLDef follow-interval-profile  
+	 ((voices 0)
+	  (n 0)
+	  (profile NIL)
+	  (step-size 2)
+	  ;; removed args:
+	  ;; (mode () (ccl::mk-menu-subview :menu-list '(":pitch" ":rhythm")))
+	  ;; (constrain () (ccl::mk-menu-subview :menu-list '(":profile" ":intervals" ":directions")))
+	  &key
+	  (start 0)
+	  ;; removed args:
+	  ;; (weight-offset 0)
+	  ;; (transform NIL)
+	  ;; (map NIL))
+	  )
+	 "Strict rule: The pitches of the resulting music follow the intervals of the given profile (numbers, a voice, or BPFs). If the profile contains a pitch repetition, then the corresponding interval in the solution must be a repetition. If the profile contains a step (up to `step-size'), then the corresponding interval in the solution must be a step in the same direction (up to `step-size'). If the profile contains a skip (larger than `step-size'), then the corresponding interval in the solution must be a skip in the same direction. 
+
+Args:
+
+voices (int or list of ints): The voice(s) to which the constraint is applied. 
+
+n (int): The first n notes are affected (if n is greater than the length of profile, then that length is taken). If 0, then n is disregarded. NOTE: if a BPF is used then make sure n is greater than 0.
+
+profile: Specifies the profile, which should be followed. This can be either a list of numbers (ints, floats or ratios), a voice object (or a score/part), a BPF object. In case a score or part object is given, then only the first voice is extracted and used. If voice objects contains chords, then only the first chord note is extracted. In case a BPF is given, then that BPF is sampled (n samples) and the y values are used.
+
+Key args:
+
+start (int): At which note position to start applying this rule (zero-based). 
+
+TODO: revise -- is this part of doc (copied from previous version of rule) still true?
+NOTE: If this rule is used with pitch/rhythm motifs, then only the selection of the 1st motif note is controlled by the rule (in future it would be nice to control the average pitch/rhythm of motifs, but that would require different rule applicators).
+"
+	 ()
+	 ;; (:groupings '(3 2))
+	 (flet ((same-direction (interval1 interval2)
+		  "interval1 and interval2 go into the same direction. Repetitions are not covered."
+		  (cond ((< 0 interval1) (< 0 interval2))
+			((> 0 interval1) (> 0 interval2))
+			(T NIL)
+			)))
+	   ;; TODO: Improve performance: encode profile as vector in this and other profile rules
+	   (let ((list-profile  
+		  ;; process different inputs: list of int, BPF, score... 
+		  (cond ((listp profile) profile) ;; TODO: revise for polyphonic case (test for list of numbers)
+			((ccl::break-point-function-p profile)
+			 (if (> n 0)  
+			     (ccl::pwgl-sample profile n)
+			     (progn (warn "Cannot sample BPF with n set to 0") NIL)))
+			((or (ccl::voice-p profile) (ccl::score-p profile) (ccl::part-p profile)) 
+			 (voice->pitches profile))
+			(T (error "Neither list nor score nor BPF: ~A" profile))
+			)))
+	     (r-pitches-one-voice
+	      #'(lambda (xs) 
+		  "Strict rule"
+		  (let ((l (- (length xs) start)))
+		    (if (and (>= l 2) ; (> l 0)
+			     (or (= n 0) (<= l n))			     
+			     (<= l (length list-profile)))
+			(let ((profile-interval (- (nth (- l 2) list-profile)
+						   (nth (- l 1) list-profile)))
+			      (solution-interval (apply #'- (last xs 2))))
+			  (cond
+			    ;; repetition
+			    ((= profile-interval 0) (= solution-interval 0))
+			    ;; step
+			    ((<= (abs profile-interval) step-size)
+			     (and (<= (abs solution-interval) step-size)
+				  (same-direction profile-interval solution-interval)))
+			    ;; skip
+			    ((> (abs profile-interval) step-size)
+			     (and (> (abs solution-interval) step-size)
+				  (same-direction profile-interval solution-interval)))
+			    (T NIL)))
+			;; otherwise 
+			T)))
+	      voices
+	      :all-pitches))))
+	 
 
 
 ;; Some mapping functions for pitch-profile-hr or rhythm-profile-hr
