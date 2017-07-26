@@ -12,6 +12,12 @@
 ;;; GNU General Public License for more details.
 ;;; *************************************************************
 
+
+;;; TODO:
+;;; - Update all rules calling R-pitch-pitch in background and added  support for input-mode :at-timepoints
+;;;   R-pitch-pitch supports input-mode :at-timepoints -- useful for specifying more complex positions where rule should be applied. 
+
+
 (in-package :cluster-rules)
 
 ;;;
@@ -264,6 +270,51 @@ Other arguments are inherited from r-pitch-pitch."
 							   (<= (abs (- voice-pitch2 (second pitches3))) step-size)
 							 T))
 						T))
+					  T))
+				    (list chord-voice voice)
+				    '(0)
+				    input-mode
+				    gracenotes?
+				    :pitch
+				    rule-type weight))
+		 (if (listp voices) voices (list voices))))
+
+
+
+;;; chord-tone-follows-non-chord-tone
+
+(PWGLDef chord-tone-follows-non-chord-tone
+	 ((voices 2)
+	  (input-mode  () (ccl::mk-menu-subview :menu-list '(":all" ":beat" ":1st-beat")))
+	  (gracenotes?  () :gracenotes?-exclude-mbox)
+	  &optional
+	  (rule-type  () :rule-type-mbox)
+	  (weight 1)
+	  (chord-voice 1))
+	 "Every tone (PC) that is not a chord tone (member of sim chord PCs, in voice 1 by default) is followed by a chord tone.
+
+Args: 
+voices (int or list of ints): the voice(s) to which this constraint is applied.
+
+Optional args:
+chord-voice (int, default 1): the voice representing the underlying chord.
+
+Other arguments are inherited from r-pitch-pitch."
+	 () 
+	 (mapcar #'(lambda (voice)
+		     (r-pitch-pitch #'(lambda (pitches1 pitches2)
+					;; Every pitchesN is a list of the form (chord-pitches voice-pitch) 
+					(if (and (first pitches1) (first pitches2)
+						 (second pitches2) (second pitches2))  ;; no rests
+					    (let ((chord-pitches1 (first pitches1))
+						  (voice-pitch1 (second pitches1))
+						  (chord-pitches2 (first pitches2))
+						  (voice-pitch2 (second pitches2)))
+					      (if (not (member (mod voice-pitch1 12) 
+							       (mapcar #'(lambda (p) (mod p 12)) chord-pitches1)))
+						  (member (mod voice-pitch2 12)
+							  (mapcar #'(lambda (p) (mod p 12)) chord-pitches2))
+						  T))
 					  T))
 				    (list chord-voice voice)
 				    '(0)
