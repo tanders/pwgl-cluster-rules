@@ -46,7 +46,17 @@
 	 (if (probe-file path)
 	     (with-open-file (stream path)
 			     (read stream))
-	   (warn "path ~A does not exist!" path)))
+	     (warn "path ~A does not exist!" path)))
+
+
+(PWGLDef pprint-to-file ((path NIL) (expr NIL))
+	 "Pretty-prints to the given path."
+	 ()
+	 (with-open-file (my-stream path
+				    :direction :output
+				    :if-exists :supersede)
+	   (pprint expr my-stream))
+	 path)
 
 
 ;; read-harmony-file
