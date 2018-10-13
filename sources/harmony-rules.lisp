@@ -96,6 +96,7 @@ Other arguments are inherited from r-pitch-pitch."
 
 ;; only-chord-PCs
 
+;;; TODO: ? allow for single tones in chord voice 
 (PWGLDef only-chord-PCs ((voices 2)
 			 (input-mode  () (ccl::mk-menu-subview :menu-list '(":beat" ":all" ":1st-beat")))
 			 (gracenotes?  () :gracenotes?-exclude-mbox)
