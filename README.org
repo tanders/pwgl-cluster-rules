@@ -2,3 +2,7 @@
 
 A library for [[http://www2.siba.fi/PWGL/][PWGL]] that defines rules for the PWGL library [[http://sandred.com/PRISMA/PRISMA.html][Cluster Engine]] by [[http://sandred.com/][Örjan Sandred]].
 
+NOTE: Patches created with this library do not automatically load this library. So, *whenever you use this library make sure you either manually load it every time before loading a patch using it, or you set this library for auto-loading in the PWGL in the menu File > Autoload Libraries.* 
+
+Small print: The reason for this quirk is that I renamed the library from its original name cluster-rules into the new pwgl-cluster-rules, to distinguish it from a new version called [[https://github.com/tanders/cluster-rules][cluster-rules]] that does not depend on PWGL anymore. The problem above would be avoided by also renaming its CL package into pwgl-cluster-rules, but then not only every source file, but worse also every tutorial patch would need updating, and every box from this library in every tutorial patch would need replacing. I simply did not want to do that... I meanwhile found ways how to write libraries that could be loaded both into PWGL and plain Common Lisp, but so far I did not feel the need to update this library when the problem could simply be circumvented by loading the library as described above.
+
