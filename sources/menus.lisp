@@ -55,7 +55,9 @@
      ("score" (voice->start-times voice->durations voice->pitches
 	       set-staff-clefs
 	       set-staff-instruments
-	       set-staff-channels))
+	       set-staff-channels
+	       set-voice-velocities
+	       ))
      ("utilities"  (scale->pitchdomain
 		    file-in-this-directory read-lisp-file read-harmony-file 
 		    output-filename

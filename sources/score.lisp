@@ -75,6 +75,17 @@ rationalize? (Boolean): If the score has a constant tempo of 60, then durations 
 
 
 
+(PWGLDef voice->velocities ((voice nil))
+	 "Expects a voice and returns a list of its note velocities. If a score or part is given instead, then the first voice is selected. In case there is a rest, NIL is returned.
+"
+	 ()
+	 (mappend #'(lambda (c) 
+		      (cond ((ccl::rest-p c) '(NIL))
+			    ((ccl::tied-p c) NIL)
+			    (T (list (ccl::vel (first (ccl::collect-enp-objects c :note)))))))
+		  (ccl::collect-enp-objects (first (ccl::collect-enp-objects voice :voice)) 
+					    :chord)))
+
 
 ;;
 ;; Set clefs for a score
@@ -89,7 +100,7 @@ rationalize? (Boolean): If the score has a constant tempo of 60, then durations 
 (PWGLDef set-staff-clefs ((score '())
 			  (clef 'treble-staff :staff-types-scroll) 
 			  &rest (clefs 'treble-staff :staff-types-scroll))
-	 "Set the clef of successive staves by extending and scrolling menus.
+	 "Set the clef of successive staves by extending and scrolling menus. Function destructively changes score.
 
 Definition inspired Julien Vincenot"
 	 (:groupings '(1 1))
@@ -109,7 +120,7 @@ Definition inspired Julien Vincenot"
 				(instrument 'piano)
 				&rest (instruments 'piano))
 	 ;; (instruments () (ccl::mk-menu-subview :menu-list '(":beats" ":1st-beat")))
-	 "Set the instruments of successive staves."
+	 "Set the instruments of successive staves. Function destructively changes score."
 	 (:groupings '(1 1))
 	 (let ((all-instruments (cons instrument instruments)))
 	   (system::enp-script score        
@@ -124,7 +135,7 @@ Definition inspired Julien Vincenot"
 
 
 (PWGLDef set-staff-channels ((score '()) (channel 0) &rest (channels 0))
-	 "Set the MIDI channels of successive staves."
+	 "Set the MIDI channels of successive staves. Function destructively changes score."
 	 (:groupings '(1 1))
 	 (let ((all-chans (cons channel channels)))
 	   (system::enp-script score        
@@ -135,3 +146,84 @@ Definition inspired Julien Vincenot"
 					 (?if (setf (ccl::chan ?1) ,channel))))
 			       NIL)))
 
+;; function copied from my ta-utilities library
+(defun ensure-list (x)
+  "Ensures that x is a list. If not, a list is wrapped around."
+  (if (listp x)
+    x
+    (list x)))
+
+;; function copied from my tot library
+(defun circle-repeat (pattern n)
+  "Circle through elements in pattern (a list) until n elements are collected.
+
+  NOTE: only supports flat list so far.
+
+* Arguments:
+  - pattern: a list or single value treated as a one-value list
+  - n: an integer
+
+* Examples:
+
+;;; (circle-repeat '(bb4 g4) 10)
+;;; => (bb4 g4 bb4 g4 bb4 g4 bb4 g4 bb4 g4)
+
+The function span can do something very similar. 
+
+;;; (span (gen-repeat 10 'x) '(bb4 g4))
+
+
+See also Opusmodus buildin gen-trim, which does the same, but is overall more flexible.
+"  
+  ;; (assert pattern
+  ;;         (pattern) "circle-repeat: must be of at least length 1: ~A" pattern)
+  (let* ((pattern-l (if pattern
+			(ensure-list pattern)
+			;; if pattern is nil then repeat nil
+			(list nil)))
+	 (l (length pattern-l)))
+    (loop 
+      for i from 0 to (- n 1)
+      collect (nth (mod i l) 
+                   pattern-l))))
+
+; (circle-repeat '(bb4 g4 f4) 20)
+; (circle-repeat nil 3)
+
+
+(PWGLDef set-voice-velocities ((score '()) (velocities ()) &rest (velocity-lists ()))
+	 "Set MIDI velocities of notes of successive voices. If a given velocities list is too long, the end is ignored, and if it is not long enough, then it is quasi looped. 
+Function destructively changes score."
+	 (:groupings '(1 1))
+	 (when velocities
+	   (let ((all-velocity-lists (cons velocities velocity-lists))
+		 (voices (ccl:collect-enp-objects score :voice)))
+	     (loop
+		for voice in voices
+		for velos in all-velocity-lists
+		collect
+		  (let ((notes (ccl:collect-enp-objects voice :note)))
+		    (loop
+		       for note in notes
+		       for velo in (circle-repeat velos (length notes))
+		       do (setf (ccl::vel note) velo)
+		       collect note)))))
+	 score)
+
+
+#|
+;;; TODO: 
+(PWGLDef set-staff-velocity ((score '()) (velocities ()) &rest (velocity-lists ()))
+	 "Set MIDI velocities of notes of successive staves. If the given list is too long, the end is chopped off, and if it is not long enough, then it is circled/looped."
+	 (:groupings '(1 1))
+	 (when velocities
+	   (let ((all-velocity-lists (cons velocities velocity-lists)))
+	     (system::enp-script score        
+				 (loop for velos in all-velocity-lists
+				    ;;; TODO: 
+				    for index in (pw::arithm-ser 1 1 (length all-velocity-lists))
+				    collect 
+				      `(* ?1  :partnum (list ,index)
+					  (?if (setf (ccl::chan ?1) ,channel))))
+				 NIL))))
+|#
